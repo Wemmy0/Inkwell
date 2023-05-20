@@ -29,7 +29,8 @@ class FileViewer(Gtk.ListBox):
 
 	def _update_files(self, files):
 		for i in files:
-			self.append(Gtk.Label(label = i))
+			label = Gtk.Label(label=i)
+			self.append(Gtk.Label(label=i))
 
 
 class Text:
@@ -48,7 +49,7 @@ class Text:
 
 	def detect_changes(self, widget):
 		self.text_content = self.buffer.get_text(self.buffer.get_start_iter(),
-												self.buffer.get_end_iter(), False)
+		                                         self.buffer.get_end_iter(), False)
 		log("Changes detected")
 
 
