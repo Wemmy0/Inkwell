@@ -7,6 +7,7 @@ gi.require_version('Adw', '1')
 from gi.repository import Gtk, Adw
 from ui import build_ui
 
+from sync import sync
 
 class MainWindow(Gtk.ApplicationWindow):
 	def __init__(self, *args, **kwargs):
@@ -23,6 +24,7 @@ class MyApp(Adw.Application):
 	def on_activate(self, app):
 		self.win = MainWindow(application=app)
 		self.win.set_default_size(600, 400)
+		self.sync = sync("localhost", "Notes", "root", "NEA", "Folder")
 		self.win.present()
 
 
@@ -44,3 +46,4 @@ if verbose:
 
 app = MyApp(application_id="com.tomh.Inkwell")
 app.run(sys.argv)
+app.sync.do()

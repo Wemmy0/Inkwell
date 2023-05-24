@@ -103,29 +103,29 @@ def upload_file(file):
 	connection.commit()
 
 
-if not os.path.exists(directory):
-	print("IMPORTANT: Folder doesn't exist, creating")
-	os.makedirs(directory)
-local_files = scan_files(directory)
+def method_name():
+	if not os.path.exists(directory):
+		print("IMPORTANT: Folder doesn't exist, creating")
+		os.makedirs(directory)
+	local_files = scan_files(directory)
+	cursor.execute("SELECT filename FROM test")
+	db_files = cursor.fetchall()
+	for i in range(len(db_files)):
+		# Fix formatting of db_files
+		db_files[i] = db_files[i][0]
+	for i in db_files:
+		if i in local_files:
+			# Existing files in db and local
+			compare_files(i)
+		else:
+			# New file in db
+			print(f"New file in DB, downloading {i}")
+			download_file(i)
+	# Find new files that aren't in the db
+	for i in list(set(local_files) - set(db_files)):
+		# New file local
+		print(f"{i} is new to the db and will be uploaded")
+		upload_file(i)
 
-cursor.execute("SELECT filename FROM test")
-db_files = cursor.fetchall()
 
-for i in range(len(db_files)):
-	# Fix formatting of db_files
-	db_files[i] = db_files[i][0]
-
-for i in db_files:
-	if i in local_files:
-		# Existing files in db and local
-		compare_files(i)
-	else:
-		# New file in db
-		print(f"New file in DB, downloading {i}")
-		download_file(i)
-
-# Find new files that aren't in the db
-for i in list(set(local_files) - set(db_files)):
-	# New file local
-	print(f"{i} is new to the db and will be uploaded")
-	upload_file(i)
+method_name()
