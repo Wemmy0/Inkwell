@@ -4,7 +4,7 @@ from os.path import isfile
 import hashlib
 
 
-class sync():
+class Sync:
 	def __init__(self, host, database, user, password, path, verbose=False):
 		self.connection = mysql.connector.connect(host=host, database=database, user=user, password=password)
 		self.cursor = self.connection.cursor()

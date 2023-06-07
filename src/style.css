@@ -1,0 +1,17 @@
+/* Styling for title text */
+title  {
+    font-size: 20px;
+    font-weight: bold;
+    padding: 10px;
+    /*text-decoration: underline;*/
+}
+
+list row:selected {
+    background-color: #303030;
+    border-radius: 8px 8px 8px 8px;
+}
+
+list row:hover {
+    /*background-color: transparent;*/
+    border-radius: 8px 8px 8px 8px;
+}

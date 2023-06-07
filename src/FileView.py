@@ -1,24 +1,19 @@
-from gi.repository import Gtk, Gdk
+from gi.repository import Gtk
 import json
 import os
 from os.path import isfile
 
-path = "Folder"
 
 def log(*args):
     if verbose:
         print(*args)
 
 
-def initialise_json(filename):
-    # If json file isn't found, create it with json {}
-    with open(filename, "w+") as file:
-        file.write("{}")
-
-
-class LeftWindow(Gtk.Box):
-    def __init__(self, path):
+class FileWindow(Gtk.Box):
+    def __init__(self, path, verbose_mode):
         super().__init__()
+        global verbose
+        verbose = verbose_mode
         self.set_orientation(Gtk.Orientation.VERTICAL)
 
         # Search bar
@@ -68,21 +63,26 @@ class FileViewer(Gtk.ListBox):
             self.files.remove(i)
 
         self.initialise_colours()
+        self.file_rows = []
         self.add_files(self.files)
 
     def scan_files(self, path):
         out = []
+        extension = ".json"
         for i in os.listdir(path):
             if not isfile(path + "/" + i):
                 out = out + self.scan_files(path + "/" + i)
-            else:
+            elif extension in i:
+                # Only return .json files
                 out.append(path + "/" + i)
         log(f"Found {len(out)} files")
         return out
 
     def add_files(self, files):
         for i in files:
-            self.append(FileViewRow(i, self.palette, self.json_data, self.path + "/colours.json"))
+            row = FileViewRow(i, self.palette, self.json_data, self.path + "/colours.json")
+            self.append(row)
+            self.file_rows.append(self.get_last_child())
 
     def initialise_colours(self):
         # Load colours.json
@@ -106,10 +106,11 @@ class FileViewer(Gtk.ListBox):
 
 class FileViewRow(Gtk.Box):
     def __init__(self, filename, palette, current_colours, json_file):
-        self.filename = filename
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL)
+        self.filename = filename
         self.palette = palette
         self.popover = Gtk.Popover()
+        set_margins(self, 1)
 
         # Image containing circle, popout to selector of colour
         self.image = Gtk.Image()
@@ -122,20 +123,22 @@ class FileViewRow(Gtk.Box):
         # TODO: Remove border of button - it's very ugly
         self.colour_button = Gtk.MenuButton(child=self.image)
         self.colour_button.set_popover(self.popover)
-        set_margins(self.colour_button, 2)
         self.append(self.colour_button)
 
         # Box containing file name on the top and start of contents at the button
         right_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
 
-        filename_label = Gtk.Label(label=self.filename[self.filename.find("/") + 1:])
-        filename_label.set_halign(Gtk.Align.START)
-        right_box.append(filename_label)
+        self.filename_label = Gtk.Label(label=self.filename[self.filename.find("/") + 1:].strip(".json"),
+                                        margin_start=4)
+        self.filename_label.set_halign(Gtk.Align.START)
+        right_box.append(self.filename_label)
 
-        preview_label = Gtk.Label(label=self.get_start_contents(self.filename) + "...")
-        preview_label.set_sensitive(False)
-        preview_label.set_halign(Gtk.Align.START)
-        right_box.append(preview_label)
+        # TODO: Implement with json format
+        # preview_label = Gtk.Label(label=self.get_start_contents(self.filename) + "...",
+        #                           margin_start=4)
+        # preview_label.set_sensitive(False)
+        # preview_label.set_halign(Gtk.Align.START)
+        # right_box.append(preview_label)
 
         self.append(right_box)
 
@@ -172,109 +175,10 @@ class FileViewRow(Gtk.Box):
             self.popover.hide()
 
 
-class Text:
-    def __init__(self):
-        self.text_content = ""
-        self.pane = Gtk.ScrolledWindow()
-
-        self.viewport = Gtk.Viewport()
-        self.pane.set_child(self.viewport)
-        self.text = Gtk.TextView()
-        self.viewport.set_child(self.text)
-        self.buffer = self.text.get_buffer()
-
-        # Removed, sync only on app open/close
-        # self.text.connect("backspace", self.detect_changes)
-        # self.text.connect("delete-from-cursor", self.detect_changes)
-
-    # def detect_changes(self, widget):
-    #     self.text_content = self.buffer.get_text(self.buffer.get_start_iter(),
-    #                                              self.buffer.get_end_iter(), False)
-    #     log("Changes detected")
-
-
-def build_ui(window, debug):
-    global verbose
-    verbose = debug
-    log("Building UI...")
-
-    # Custom CSS
-    provider = Gtk.CssProvider()
-    css_provider = Gtk.CssProvider()
-    css_provider.load_from_path('style.css')
-    Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(), css_provider,
-                                              Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
-
-    header = HeaderUI()
-    window.set_titlebar(header)
-
-    main_container = Gtk.Paned()
-    main_container.set_position(200)
-
-    # Left pane
-    # File viewer
-    left_window = Gtk.ScrolledWindow()
-    left_viewport = Gtk.Viewport()
-    left_window.set_child(left_viewport)
-
-    left_content = LeftWindow(path)
-    left_viewport.set_child(left_content)
-
-    main_container.set_start_child(left_window)
-
-    # Right pane
-    right = Text()
-    main_container.set_end_child(right.pane)
-
-    window.set_child(main_container)
-
-
-class HeaderUI(Gtk.HeaderBar):
-    def __init__(self):
-        super().__init__()
-        self.set_show_title_buttons(True)
-
-        # New Note Button
-        self.new_note_btn = Gtk.Button(icon_name="libreoffice-writer-symbolic",
-                                       tooltip_text="New Note")
-        self.pack_start(self.new_note_btn)
-
-        # New Task Button
-        self.new_task_btn = Gtk.Button(icon_name="checkbox-checked-symbolic",
-                                       tooltip_text="New Task")
-        self.pack_start(self.new_task_btn)
-
-        # # View mode button (Remove - not a priority)
-        # self.view_mode_btn = Gtk.Button()
-        # self.view_mode_btn.set_icon_name("org.gnome.gedit-symbolic")
-        # self.view_mode_btn.set_tooltip_text("Switch to view mode")
-        # self.view_mode_btn.connect("clicked", change_view_mode)
-        # self.pack_end(self.view_mode_btn)
-
-        # New Header Button
-        self.new_header_btn = Gtk.Button(icon_name="format-text-larger-symbolic",
-                                         tooltip_text="Insert Title")
-        self.pack_end(self.new_header_btn)
-
-        # New Image Button
-        self.new_image_btn = Gtk.Button(icon_name="image-x-generic-symbolic",
-                                        tooltip_text="Insert Image")
-        self.pack_end(self.new_image_btn)
-
-
-# def change_view_mode(button):
-# 	current_mode = button.get_icon_name()
-# 	match current_mode:
-# 		case "org.gnome.gedit-symbolic":
-# 			# Toggle to view mode
-# 			print("Switching to view mode")
-# 			button.set_icon_name("ephy-reader-mode-symbolic")
-# 			button.set_tooltip_text("Switch to edit mode")
-# 		case "ephy-reader-mode-symbolic":
-# 			# Toggle to edit mode
-# 			print("Switching to edit mode")
-# 			button.set_icon_name("org.gnome.gedit-symbolic")
-# 			button.set_tooltip_text("Switch to view mode")
+def initialise_json(filename):
+    # If json file isn't found, create it with json {}
+    with open(filename, "w+") as file:
+        file.write("{}")
 
 
 def set_margins(widget, num):
