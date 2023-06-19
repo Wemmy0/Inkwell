@@ -74,14 +74,22 @@ class ImageDialogue(Gtk.Window):
         self.group.add(self.cache_image_row)
         # endregion
 
+        # region Tooltip
+        self.tooltip_row = Adw.ActionRow(title="Description",
+                                         subtitle="Shown when hovering over the element")
+        self.tooltip_entry = Gtk.Entry(valign=Gtk.Align.CENTER)
+        self.tooltip_row.add_suffix(self.tooltip_entry)
+        self.group.add(self.tooltip_row)
+        # endregion
+
         # region image preview
-        self.image_preview_row = Adw.ActionRow(visible=False)
-        self.group.add(self.image_preview_row)
+        # self.image_preview_row = Adw.ActionRow(visible=False)
+        # self.group.add(self.image_preview_row)
         # endregion
 
         # Change source to the local file as default
-        self.source_dropdown.set_active(0)
-        self.change_source("Local File")
+        self.source_dropdown.set_active(1)
+        self.change_source("URL")
 
         # Header UI
         self.header = Gtk.HeaderBar(show_title_buttons=False)
@@ -102,25 +110,38 @@ class ImageDialogue(Gtk.Window):
         self.wikimedia_row.hide()
         self.web_embed_row.hide()
         self.cache_image_row.hide()
-        # self.url_entry.set_text()
+        self.tooltip_row.show()
         match text:
             case "Local File":
                 self.file_row.show()
             case "URL":
                 self.url_row.show()
                 self.cache_image_row.show()
-                # self.url_entry.connect("")
             case "Wikimedia":
                 self.wikimedia_row.show()
                 self.cache_image_row.show()
             case "Web Embed":
                 self.web_embed_row.show()
-
-    # def preview_url(self):
-
+                self.tooltip_row.hide()
 
     def close_window(self, *args):
+        print("Closing image dialogue")
         self.close()
 
     def select_source(self, *args):
         self.change_source(self.source_dropdown.get_active_text())
+
+    def get_values(self):
+        source_dropdown = self.source_dropdown.get_active_text()
+        url = self.url_entry.get_text()
+        file = self.file_entry.get_text()
+        tooltip = self.tooltip_entry.get_text()
+        cache = self.cache_image_switch.get_state()
+        sources = {"URL": "url", "Local File": "file", "Wikimedia": "wikimedia"}
+        data = {"type": "image" if source_dropdown != "Web Embed" else "iframe",
+                "source": sources[source_dropdown],
+                "url": url,
+                "file": file,
+                "tooltip": tooltip,
+                "cache": cache}
+        return data

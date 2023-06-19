@@ -10,8 +10,9 @@ def log(*args):
 
 
 class FileWindow(Gtk.Box):
-    def __init__(self, path, verbose_mode):
+    def __init__(self, path, verbose_mode, new_buttons):
         super().__init__()
+        self.path = path
         global verbose
         verbose = verbose_mode
         self.set_orientation(Gtk.Orientation.VERTICAL)
@@ -47,6 +48,19 @@ class FileWindow(Gtk.Box):
                 if query.lower() not in files[i].lower():
                     self.file_viewer.get_row_at_index(i).hide()
 
+    def add_note(self, *args):
+        new_row = NewFileRow(self.path)
+        self.file_viewer.append(new_row)
+        new_row.confirm.connect("clicked", self.create_new_note)
+
+    def create_new_note(self, *args):
+        print("Create new file")
+        print(self.file_viewer.get_last_child().get_last_child().get_first_child().get_text())
+        self.file_viewer.remove(self.get_last_child().get_last_child())
+        # to_remove, filename = self.file_viewer.get_last_child().create()
+        # self.file_viewer.remove(to_remove)
+        # initialise_json(filename)
+
 
 class FileViewer(Gtk.ListBox):
     def __init__(self, path):
@@ -75,7 +89,7 @@ class FileViewer(Gtk.ListBox):
             elif extension in i:
                 # Only return .json files
                 out.append(path + "/" + i)
-        log(f"Found {len(out)} files")
+        log(f"Found {len(out)} files in {path}")
         return out
 
     def add_files(self, files):
@@ -104,6 +118,29 @@ class FileViewer(Gtk.ListBox):
                 json.dump(self.json_data, file)
 
 
+class NewFileRow(Gtk.Box):
+    def __init__(self, path):
+        super().__init__(orientation=Gtk.Orientation.HORIZONTAL)
+        self.path = path
+        self.filename_entry = Gtk.Entry(placeholder_text="New File",
+                                        margin_top=5,
+                                        margin_bottom=5,
+                                        margin_end=5,
+                                        hexpand=True)
+        self.append(self.filename_entry)
+
+        self.confirm = Gtk.Button(icon_name="dino-tick-symbolic",
+                                  margin_top=5,
+                                  margin_bottom=5,
+                                  css_classes=["suggested-action"])
+        # self.confirm.add_css_class("suggested-action")
+        self.append(self.confirm)
+        # self.confirm.connect("clicked", self.create_file)
+
+    def create(self):
+        return self, f"{self.path}/{self.filename_entry.get_text()}"
+
+
 class FileViewRow(Gtk.Box):
     def __init__(self, filename, palette, current_colours, json_file):
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL)
@@ -128,27 +165,29 @@ class FileViewRow(Gtk.Box):
         # Box containing file name on the top and start of contents at the button
         right_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
 
-        self.filename_label = Gtk.Label(label=self.filename[self.filename.find("/") + 1:].strip(".json"),
+        self.filename_label = Gtk.Label(label=self.filename[self.filename.rfind("/") + 1:].strip(".json"),
                                         margin_start=4)
         self.filename_label.set_halign(Gtk.Align.START)
         right_box.append(self.filename_label)
 
         # TODO: Implement with json format
-        # preview_label = Gtk.Label(label=self.get_start_contents(self.filename) + "...",
-        #                           margin_start=4)
-        # preview_label.set_sensitive(False)
-        # preview_label.set_halign(Gtk.Align.START)
-        # right_box.append(preview_label)
+        last_slash = self.filename.rfind("/")
+        if last_slash > -1:
+            preview_label = Gtk.Label(label=self.filename[self.filename.find("/"):last_slash].strip(),
+                                      margin_start=4)
+            preview_label.set_sensitive(False)
+            preview_label.set_halign(Gtk.Align.START)
+            right_box.append(preview_label)
 
         self.append(right_box)
 
-    def get_start_contents(self, file):
-        try:
-            with open(file, "r", 20) as content:
-                return content.read(20).replace("\n", " ")
-        except UnicodeDecodeError:
-            print(f"Skipping preview of {file}, not text")
-            return ""
+    # def get_start_contents(self, file):
+    #     try:
+    #         with open(file, "r", 20) as content:
+    #             return content.read(20).replace("\n", " ")
+    #     except UnicodeDecodeError:
+    #         print(f"Skipping preview of {file}, not text")
+    #         return ""
 
     def colour_popover(self):
         container = Gtk.ListBox()
@@ -168,8 +207,7 @@ class FileViewRow(Gtk.Box):
             self.image.set_from_file("Assets/" + new_colour)
             self.current_colours[self.filename] = self.palette[row.get_index()]
 
-            # TODO: This should use path provided instead of hard-coded
-            with open("Folder/colours.json", "w") as file:
+            with open(self.json_file, "w") as file:
                 json.dump(self.current_colours, file)
 
             self.popover.hide()
@@ -177,6 +215,7 @@ class FileViewRow(Gtk.Box):
 
 def initialise_json(filename):
     # If json file isn't found, create it with json {}
+    print(f"{filename} doesn't exist. Creating")
     with open(filename, "w+") as file:
         file.write("{}")
 

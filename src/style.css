@@ -6,6 +6,11 @@ title  {
     /*text-decoration: underline;*/
 }
 
+new_entry {
+    background-color: #1e1e1e;
+    /*font-weight: bold;*/
+}
+
 list row:selected {
     background-color: #303030;
     border-radius: 8px 8px 8px 8px;

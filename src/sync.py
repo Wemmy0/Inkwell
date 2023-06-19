@@ -6,7 +6,13 @@ import hashlib
 
 class Sync:
 	def __init__(self, host, database, user, password, path, verbose=False):
-		self.connection = mysql.connector.connect(host=host, database=database, user=user, password=password)
+		try:
+			self.connection = mysql.connector.connect(host=host, database=database, user=user, password=password)
+			self.broken = False
+		except mysql.connector.errors.DatabaseError:
+			print(f"Unable to reach {user}@{host}, sync disabled")
+			self.broken = True
+			return
 		self.cursor = self.connection.cursor()
 
 		self.buffer_size = 65536
@@ -114,33 +120,34 @@ class Sync:
 		return md5.hexdigest()
 
 	def do(self):
-		if not os.path.exists(self.path):
-			self.log("IMPORTANT: Folder doesn't exist, creating")
-			os.makedirs(self.path)
+		if not self.broken:
+			if not os.path.exists(self.path):
+				self.log("IMPORTANT: New Folder doesn't exist, creating")
+				os.makedirs(self.path)
 
-		local_files = self.scan_files(self.path)
-		self.cursor.execute("SELECT filename FROM test")
-		db_files = self.cursor.fetchall()
+			local_files = self.scan_files(self.path)
+			self.cursor.execute("SELECT filename FROM test")
+			db_files = self.cursor.fetchall()
 
-		for i in range(len(db_files)):
-			# Fix formatting of db_files
-			db_files[i] = db_files[i][0]
+			for i in range(len(db_files)):
+				# Fix formatting of db_files
+				db_files[i] = db_files[i][0]
 
-		for i in db_files:
-			if i in local_files:
-				# Existing files in db and local
-				self.compare_files(i)
-			else:
-				# New file in db
-				self.log(f"New file in DB, downloading {i}")
-				self.download_file(i)
-		# Find new files that aren't in the db
+			for i in db_files:
+				if i in local_files:
+					# Existing files in db and local
+					self.compare_files(i)
+				else:
+					# New file in db
+					self.log(f"New file in DB, downloading {i}")
+					self.download_file(i)
+			# Find new files that aren't in the db
 
-		for i in list(set(local_files) - set(db_files)):
-			# New file local
-			self.log(f"{i} is new to the db and will be uploaded")
-			self.upload_file(i)
-		self.report()
+			for i in list(set(local_files) - set(db_files)):
+				# New file local
+				self.log(f"{i} is new to the db and will be uploaded")
+				self.upload_file(i)
+			self.report()
 
 	def report(self):
 		print(f"Uploaded: {self.uploaded}\n"
