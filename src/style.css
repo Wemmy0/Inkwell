@@ -3,8 +3,32 @@ title  {
     font-size: 20px;
     font-weight: bold;
     padding: 10px;
+}
+
+bold_point {
+    font-weight: bold;
+}
+
+title-underlined  {
+    font-size: 20px;
+    font-weight: bold;
+    padding: 10px;
+    text-decoration: underline white;
+}
+
+body {
+    border-radius: 5px 5px 5px 5px;
+}
+
+list-item  {
+    padding: 8px;
+    background-color: transparent;
     /*text-decoration: underline;*/
 }
+
+/*item-list {*/
+/*    !*background-color: transparent;*!*/
+/*}*/
 
 new_entry {
     background-color: #1e1e1e;
@@ -19,4 +43,20 @@ list row:selected {
 list row:hover {
     /*background-color: transparent;*/
     border-radius: 8px 8px 8px 8px;
+}
+
+body {
+    background-color: transparent;
+}
+
+.element-edit{
+    background-color: #303030;
+    border-radius: 8px 8px 8px 8px;
+    margin: 2px;
+}
+
+.element-warn{
+    background-color: #FF7B63;
+    border-radius: 8px 8px 8px 8px;
+    margin: 2px;
 }

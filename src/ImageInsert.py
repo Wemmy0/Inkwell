@@ -17,7 +17,7 @@ class ImageDialogue(Gtk.Window):
                                                subtitle="Please choose where the image is located")
         self.source_dropdown = Gtk.ComboBoxText(valign=Gtk.Align.CENTER)
 
-        sources = ["Local File", "URL", "Wikimedia", "Web Embed"]
+        sources = ["URL", "Local File", "Wikimedia", "Web Embed"]
         for source in sources:
             self.source_dropdown.append_text(source)
 
@@ -47,12 +47,12 @@ class ImageDialogue(Gtk.Window):
         # endregion
 
         # region Wikimedia Query Entry
-        self.wikimedia_row = Adw.ActionRow(title="Image search query",
+        self.wikipedia_row = Adw.ActionRow(title="Image search query",
                                            visible=False)
         self.wikimedia_entry = Gtk.Entry(placeholder_text="President Obama",
                                          valign=Gtk.Align.CENTER)
-        self.wikimedia_row.add_suffix(self.wikimedia_entry)
-        self.group.add(self.wikimedia_row)
+        self.wikipedia_row.add_suffix(self.wikimedia_entry)
+        self.group.add(self.wikipedia_row)
 
         # endregion
 
@@ -88,7 +88,7 @@ class ImageDialogue(Gtk.Window):
         # endregion
 
         # Change source to the local file as default
-        self.source_dropdown.set_active(1)
+        self.source_dropdown.set_active(0)
         self.change_source("URL")
 
         # Header UI
@@ -107,18 +107,18 @@ class ImageDialogue(Gtk.Window):
     def change_source(self, text):
         self.url_row.hide()
         self.file_row.hide()
-        self.wikimedia_row.hide()
+        self.wikipedia_row.hide()
         self.web_embed_row.hide()
         self.cache_image_row.hide()
         self.tooltip_row.show()
         match text:
-            case "Local File":
-                self.file_row.show()
             case "URL":
                 self.url_row.show()
                 self.cache_image_row.show()
-            case "Wikimedia":
-                self.wikimedia_row.show()
+            case "Local File":
+                self.file_row.show()
+            case "Wikipedia":
+                self.wikipedia_row.show()
                 self.cache_image_row.show()
             case "Web Embed":
                 self.web_embed_row.show()
@@ -132,12 +132,15 @@ class ImageDialogue(Gtk.Window):
         self.change_source(self.source_dropdown.get_active_text())
 
     def get_values(self):
+        if self.source_dropdown.get_active_text() == "Wikipedia":
+            pass
+
         source_dropdown = self.source_dropdown.get_active_text()
         url = self.url_entry.get_text()
         file = self.file_entry.get_text()
         tooltip = self.tooltip_entry.get_text()
         cache = self.cache_image_switch.get_state()
-        sources = {"URL": "url", "Local File": "file", "Wikimedia": "wikimedia"}
+        sources = {"URL": "url", "Local File": "file", "Wikipedia": "wikimedia"}
         data = {"type": "image" if source_dropdown != "Web Embed" else "iframe",
                 "source": sources[source_dropdown],
                 "url": url,

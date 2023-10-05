@@ -10,9 +10,10 @@ def log(*args):
 
 
 class FileWindow(Gtk.Box):
-    def __init__(self, path, verbose_mode, new_buttons):
+    def __init__(self, path, verbose_mode):
         super().__init__()
         self.path = path
+        self.creating_new = False
         global verbose
         verbose = verbose_mode
         self.set_orientation(Gtk.Orientation.VERTICAL)
@@ -49,17 +50,24 @@ class FileWindow(Gtk.Box):
                     self.file_viewer.get_row_at_index(i).hide()
 
     def add_note(self, *args):
-        new_row = NewFileRow(self.path)
-        self.file_viewer.append(new_row)
-        new_row.confirm.connect("clicked", self.create_new_note)
+        if not self.creating_new:
+            new_row = NewFileRow(self.path)
+            self.file_viewer.append(new_row)
+            new_row.filename_entry.grab_focus()
+            new_row.confirm.connect("clicked", self.create_new_note)
+            new_row.filename_entry.connect("activate", self.create_new_note)
+            self.creating_new = True  # Block the user from creating another note whilst making another
 
     def create_new_note(self, *args):
         print("Create new file")
-        print(self.file_viewer.get_last_child().get_last_child().get_first_child().get_text())
+        filename = self.path + "/" + self.file_viewer.get_last_child().get_last_child().get_first_child().get_text() + ".json"
+        print(filename)
+
         self.file_viewer.remove(self.get_last_child().get_last_child())
-        # to_remove, filename = self.file_viewer.get_last_child().create()
-        # self.file_viewer.remove(to_remove)
-        # initialise_json(filename)
+        initialise_json(filename)
+        self.file_viewer.add_files([filename])
+        self.file_viewer.files.append(filename)
+        self.creating_new = False  # Allows user to use create new note button again
 
 
 class FileViewer(Gtk.ListBox):
@@ -133,9 +141,7 @@ class NewFileRow(Gtk.Box):
                                   margin_top=5,
                                   margin_bottom=5,
                                   css_classes=["suggested-action"])
-        # self.confirm.add_css_class("suggested-action")
         self.append(self.confirm)
-        # self.confirm.connect("clicked", self.create_file)
 
     def create(self):
         return self, f"{self.path}/{self.filename_entry.get_text()}"
@@ -152,7 +158,12 @@ class FileViewRow(Gtk.Box):
         # Image containing circle, popout to selector of colour
         self.image = Gtk.Image()
         self.current_colours = current_colours
-        self.current_colour = "Assets/" + current_colours[self.filename]
+
+        try:
+            self.current_colour = "Assets/" + current_colours[self.filename]
+        except:
+            self.current_colour = "Assets/Blue.svg"
+
         self.image.set_from_file(self.current_colour)
         self.json_file = json_file
         self.colour_popover()
@@ -170,7 +181,6 @@ class FileViewRow(Gtk.Box):
         self.filename_label.set_halign(Gtk.Align.START)
         right_box.append(self.filename_label)
 
-        # TODO: Implement with json format
         last_slash = self.filename.rfind("/")
         if last_slash > -1:
             preview_label = Gtk.Label(label=self.filename[self.filename.find("/"):last_slash].strip(),
@@ -220,8 +230,8 @@ def initialise_json(filename):
         file.write("{}")
 
 
-def set_margins(widget, num):
-    widget.set_margin_start(num)
-    widget.set_margin_end(num)
-    widget.set_margin_top(num)
-    widget.set_margin_bottom(num)
+def set_margins(widget, x):
+    widget.set_margin_start(x)
+    widget.set_margin_end(x)
+    widget.set_margin_top(x)
+    widget.set_margin_bottom(x)
