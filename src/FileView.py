@@ -94,7 +94,7 @@ class FileViewer(Gtk.ListBox):
         self.file_rows = []
         self.add_files(self.files)
 
-    def scan_files(self, path, extension, full_path=True):
+    def scan_files(self, path, extension):
         out = []
         for i in os.listdir(path):
             if not isfile(path + "/" + i):

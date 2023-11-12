@@ -74,7 +74,7 @@ class UI:
         self.header.new_btn.show()
         self.header.edit_btn.show()
         self.header.save_btn.show()
-        self.header.info_btn.hide() # Hide the info button once a note is displayed to reduce clutter
+        self.header.info_btn.hide()  # Hide the info button once a note is displayed to reduce clutter
         # self.header.undo_btn.show()
         self.header.export_btn.show()
         file_path = file_viewer.files[file_viewer.file_rows.index(row)]
@@ -128,10 +128,25 @@ class HeaderUI(Gtk.HeaderBar):
         self.pack_end(self.info_btn)
         about_dialogue = Adw.AboutWindow(application_name="Inkwell",
                                          application_icon="org.gnome.gedit-symbolic",
-                                         version="1.2",
+                                         version="1.3.5",
                                          license_type=Gtk.License.GPL_3_0,
                                          developer_name="Thomas Hoggarth",
-                                         release_notes="<ul>"
+                                         release_notes="<p>This changelog maybe out of date. Please see: https://github.com/Wemmy0/Inkwell/commits/main</p>"
+                                                       "<p>1.3.5:</p>"
+                                                       "<ul>"
+                                                       "<li>Invalid colours will default to the first found colour</li>"
+                                                       "</ul>"
+                                                       "<p>1.3:</p>"
+                                                       "<ul>"
+                                                       "<li>Added configuration.toml file</li>"
+                                                       "<li>Fixed highlighting of task/list items</li>"
+                                                       "<li>Sync, Elements, AI and more can be enabled/disabled in the config file</li>"
+                                                       "<li>Fixed a crash when sync connection was invalid but was attempted to be closed anyway</li>"
+                                                       "<li>Colours can be added/removed from the Assets/ folder</li>"
+                                                       "</ul>"
+                                                       "<p>1.2:</p>"
+                                                       "<ul>"
+                                                       "<li>Added undo button</li>"
                                                        "<li>Added undo button</li>"
                                                        "<li>Added styling to edit mode</li>"
                                                        "<li>Added body text element</li>"
