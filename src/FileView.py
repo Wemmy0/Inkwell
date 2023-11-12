@@ -84,7 +84,7 @@ class FileViewer(Gtk.ListBox):
         self.blacklist = [path + "/colours.json"]
 
         self.palette = os.listdir("Assets")
-        self.files = self.scan_files(path)
+        self.files = self.scan_files(path, "json")
 
         # Remove files that are in the blacklist
         for i in self.blacklist:
@@ -94,12 +94,11 @@ class FileViewer(Gtk.ListBox):
         self.file_rows = []
         self.add_files(self.files)
 
-    def scan_files(self, path):
+    def scan_files(self, path, extension, full_path=True):
         out = []
-        extension = ".json"
         for i in os.listdir(path):
             if not isfile(path + "/" + i):
-                out = out + self.scan_files(path + "/" + i)
+                out = out + self.scan_files(path + "/" + i, extension)
             elif extension in i:
                 # Only return .json files
                 out.append(path + "/" + i)
@@ -126,8 +125,21 @@ class FileViewer(Gtk.ListBox):
 
         for i in (set(self.files) - set(self.json_data)):
             # Find files that don't exist in colours.json yet
-            # Default new files to Blue.svg
-            self.json_data[i] = "Blue.svg"
+            # Default new files to the first found image (alphabetically)
+            self.json_data[i] = self.palette[0]
+            with open(self.path + "/colours.json", "w") as file:
+                json.dump(self.json_data, file)
+        self.validate_colours()
+
+    def validate_colours(self):
+        changed = False
+        for i in self.json_data:
+            if self.json_data[i] not in self.palette:
+                print(f"Invalid colour found for file {i}, repairing...")
+                self.json_data[i] = self.palette[0]
+                changed = True
+        # If multiple files are repaired, don't waste time saving json for every file, just do it at the end
+        if changed:
             with open(self.path + "/colours.json", "w") as file:
                 json.dump(self.json_data, file)
 
@@ -164,11 +176,7 @@ class FileViewRow(Gtk.Box):
         # Image containing circle, popout to selector of colour
         self.image = Gtk.Image()
         self.current_colours = current_colours
-
-        try:
-            self.current_colour = "Assets/" + current_colours[self.filename]
-        except:
-            self.current_colour = "Assets/Blue.svg"
+        self.current_colour = "Assets/" + current_colours[self.filename]
 
         self.image.set_from_file(self.current_colour)
         self.json_file = json_file
