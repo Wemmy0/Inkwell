@@ -10,9 +10,10 @@ def log(*args):
 
 
 class FileWindow(Gtk.Box):
-    def __init__(self, path, verbose_mode):
+    def __init__(self, path, colour_coding, verbose_mode):
         super().__init__()
         self.path = path
+        self.colour_support = colour_coding
         self.creating_new = False
         global verbose
         verbose = verbose_mode
@@ -22,13 +23,14 @@ class FileWindow(Gtk.Box):
         self.search_entry = Gtk.SearchEntry()
         set_margins(self.search_entry, 2)
         self.search_entry.set_placeholder_text("Search Notes/Tasks")
+        self.search_entry.set_tooltip_text("Tip: You can search by the name of the colour")
         # self.search_entry.set_tooltip_text("Search Notes/Tasks")
         self.search_entry.connect("search-changed", self.search)
 
         # Decreasing reduces time to see results, increasing reduces no. of searches
         self.search_entry.set_search_delay(100)
 
-        self.file_viewer = FileViewer(path)
+        self.file_viewer = FileViewer(path, self.colour_support)
 
         self.append(self.search_entry)
         self.append(self.file_viewer)
@@ -46,8 +48,13 @@ class FileWindow(Gtk.Box):
         if query:
             # Find rows which don't match the query and hide them
             for i in range(len(files)):
-                if query.lower() not in files[i].lower():
-                    self.file_viewer.get_row_at_index(i).hide()
+                # Match the query against the filename and the colour if colour support is enabled in config
+                if self.colour_support:
+                    if query.lower() not in files[i].lower() + " " + self.file_viewer.json_data[files[i]].lower()[:-4]:
+                        self.file_viewer.get_row_at_index(i).hide()
+                else:
+                    if query.lower() not in files[i].lower():
+                        self.file_viewer.get_row_at_index(i).hide()
 
     def add_note(self, *args):
         if not self.creating_new:
@@ -59,10 +66,8 @@ class FileWindow(Gtk.Box):
             self.creating_new = True  # Block the user from creating another note whilst making another
 
     def create_new_note(self, *args):
-        print("Create new file")
         filename = self.path + "/" + self.file_viewer.get_last_child().get_last_child().get_first_child().get_text() + ".json"
-        print(filename)
-
+        print(f"Create new file {filename}")
         self.file_viewer.remove(self.get_last_child().get_last_child())
         initialise_json(filename)
         self.file_viewer.add_files([filename])
@@ -71,10 +76,11 @@ class FileWindow(Gtk.Box):
 
 
 class FileViewer(Gtk.ListBox):
-    def __init__(self, path):
+    def __init__(self, path, colour_support):
         super().__init__()
         self.set_vexpand(True)
         self.path = path
+        self.colour_support = colour_support
         self.blacklist = [path + "/colours.json"]
 
         self.palette = os.listdir("Assets")
@@ -102,7 +108,7 @@ class FileViewer(Gtk.ListBox):
 
     def add_files(self, files):
         for i in files:
-            row = FileViewRow(i, self.palette, self.json_data, self.path + "/colours.json")
+            row = FileViewRow(i, self.colour_support, self.palette, self.json_data, self.path + "/colours.json")
             self.append(row)
             self.file_rows.append(self.get_last_child())
 
@@ -148,7 +154,7 @@ class NewFileRow(Gtk.Box):
 
 
 class FileViewRow(Gtk.Box):
-    def __init__(self, filename, palette, current_colours, json_file):
+    def __init__(self, filename, colour_support, palette, current_colours, json_file):
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL)
         self.filename = filename
         self.palette = palette
@@ -169,7 +175,7 @@ class FileViewRow(Gtk.Box):
         self.colour_popover()
 
         # TODO: Remove border of button - it's very ugly
-        self.colour_button = Gtk.MenuButton(child=self.image)
+        self.colour_button = Gtk.MenuButton(child=self.image, visible=colour_support)
         self.colour_button.set_popover(self.popover)
         self.append(self.colour_button)
 
@@ -190,14 +196,6 @@ class FileViewRow(Gtk.Box):
             right_box.append(preview_label)
 
         self.append(right_box)
-
-    # def get_start_contents(self, file):
-    #     try:
-    #         with open(file, "r", 20) as content:
-    #             return content.read(20).replace("\n", " ")
-    #     except UnicodeDecodeError:
-    #         print(f"Skipping preview of {file}, not text")
-    #         return ""
 
     def colour_popover(self):
         container = Gtk.ListBox()

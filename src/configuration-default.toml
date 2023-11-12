@@ -1,0 +1,38 @@
+# Configuration file for Inkwell Notes
+# An invalid configuration will be moved to configuration-invalid.toml and a new config file is generated
+# So please follow the toml spec https://toml.io/
+# WARNING: This file will store sensitive information such as the database name & your ChatGPT API key.
+
+path = "Folder"
+# Enable or disable the ability to colour code notes
+colour-support = true
+
+[database]
+enabled = true
+host = ""
+database = ""
+username = ""
+password = ""
+
+[AI-Configuration]
+enabled = false
+api_key = ""
+# Valid models:
+# - gpt-3.5-turbo (default - free)
+# - gpt-4 (paid)
+model = "gpt-3.5-turbo"
+
+[elements]
+title = true
+body = true
+image = true
+list = true
+task = true
+
+[image-configuration]
+url_source = true
+file_source = true
+wikimedia_source = false # Not implamented yet
+web_source = false # Not implamented yet
+cache_support = false
+scale_support = false

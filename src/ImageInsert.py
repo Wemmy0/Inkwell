@@ -2,8 +2,10 @@ from gi.repository import Gtk, Adw
 
 
 class ImageDialogue(Gtk.Window):
-    def __init__(self):
+    def __init__(self, url_source, file_source, wikimedia_source, web_source, cache_support, scale_support):
         super().__init__()
+        self.cache_support = cache_support
+        self.scale_support = scale_support
         self.set_title("Insert Image")
 
         self.page = Adw.PreferencesPage()
@@ -17,9 +19,10 @@ class ImageDialogue(Gtk.Window):
                                                subtitle="Please choose where the image is located")
         self.source_dropdown = Gtk.ComboBoxText(valign=Gtk.Align.CENTER)
 
-        sources = ["URL", "Local File", "Wikimedia", "Web Embed"]
-        for source in sources:
-            self.source_dropdown.append_text(source)
+        if url_source: self.source_dropdown.append_text("URL")
+        if file_source: self.source_dropdown.append_text("Local File")
+        if wikimedia_source: self.source_dropdown.append_text("Wikimedia")
+        if web_source: self.source_dropdown.append_text("Web Embed")
 
         self.source_dropdown.connect('changed', self.select_source)
         self.select_source_row.add_suffix(self.source_dropdown)
@@ -66,13 +69,28 @@ class ImageDialogue(Gtk.Window):
         # endregion
 
         # region Cache to local file
-        self.cache_image_row = Adw.ActionRow(title="Cache to file",
-                                             subtitle="Download the file to notes folder for offline viewing",
-                                             visible=False)
-        self.cache_image_switch = Gtk.Switch(valign=Gtk.Align.CENTER)
-        self.cache_image_row.add_suffix(self.cache_image_switch)
-        self.group.add(self.cache_image_row)
+        # TODO: Actually do this
+        if cache_support:
+            self.cache_image_row = Adw.ActionRow(title="Cache to file",
+                                                 subtitle="Download the file to notes folder for offline viewing",
+                                                 visible=False)
+            self.cache_image_switch = Gtk.Switch(valign=Gtk.Align.CENTER)
+            self.cache_image_row.add_suffix(self.cache_image_switch)
+            self.group.add(self.cache_image_row)
         # endregion
+
+        # region Scale slider
+        # TODO: Actually do this
+        if self.scale_support:
+            self.scale_row = Adw.ActionRow(visible=False)
+            self.scale_slider = Gtk.Scale(round_digits=1)
+            self.scale_slider.set_range(0, 10)
+            for i in range(1, 10):
+                self.scale_slider.add_mark(i, Gtk.PositionType.BOTTOM)
+            # self.scale_slider.add_mark(1, Gtk.PositionType.BOTTOM)
+            # # self.scale_slider = Gtk.Range()
+            # self.scale_row.add_suffix(self.scale_slider)
+            self.group.add(self.scale_slider)
 
         # region Tooltip
         self.tooltip_row = Adw.ActionRow(title="Description",
@@ -109,17 +127,24 @@ class ImageDialogue(Gtk.Window):
         self.file_row.hide()
         self.wikipedia_row.hide()
         self.web_embed_row.hide()
-        self.cache_image_row.hide()
+        if self.scale_support:
+            self.scale_slider.hide()
+        if self.cache_support:
+            self.cache_image_row.hide()
         self.tooltip_row.show()
         match text:
             case "URL":
                 self.url_row.show()
-                self.cache_image_row.show()
+                if self.cache_support:
+                    self.cache_image_row.show()
+                if self.scale_support:
+                    self.scale_slider.show()
             case "Local File":
                 self.file_row.show()
             case "Wikipedia":
                 self.wikipedia_row.show()
-                self.cache_image_row.show()
+                if self.cache_support:
+                    self.cache_image_row.show()
             case "Web Embed":
                 self.web_embed_row.show()
                 self.tooltip_row.hide()
@@ -139,12 +164,14 @@ class ImageDialogue(Gtk.Window):
         url = self.url_entry.get_text()
         file = self.file_entry.get_text()
         tooltip = self.tooltip_entry.get_text()
+        scale = self.scale_slider.get_value()
         cache = self.cache_image_switch.get_state()
         sources = {"URL": "url", "Local File": "file", "Wikipedia": "wikimedia"}
         data = {"type": "image" if source_dropdown != "Web Embed" else "iframe",
                 "source": sources[source_dropdown],
                 "url": url,
                 "file": file,
+                "scale": scale,
                 "tooltip": tooltip,
                 "cache": cache}
         return data

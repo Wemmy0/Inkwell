@@ -14,6 +14,7 @@ def gen_phrase(num, words):
 	return out[:-1]
 
 
-with open("common words.txt") as file:
+with open("words.txt") as file:
 	file = file.readlines()
-	print(gen_phrase(5, file))
+	for i in range(10):
+		print(gen_phrase(3, file))

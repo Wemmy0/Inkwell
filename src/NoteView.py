@@ -3,6 +3,8 @@ import requests
 from gi.repository import GLib, Gtk, GdkPixbuf
 from random import randint
 from Queue import Stack
+import threading
+from ChatGPT import AiConnector, AiGUI
 
 
 def edit_style(element, mode):
@@ -17,8 +19,10 @@ def edit_style(element, mode):
 
 
 class NoteView(Gtk.Box):
-    def __init__(self, header):
+    def __init__(self, config, ai_config, header):
         super().__init__(orientation=Gtk.Orientation.VERTICAL)
+        self.config = config
+        self.ai_config = ai_config
         self.children = []
         self.header_ui = header
         self.editing = False
@@ -52,7 +56,7 @@ class NoteView(Gtk.Box):
             self.add_element(i, True)
 
     def add_element(self, data, loading_file=False):
-        element = Element(data)
+        element = Element(data, self.config, self.ai_config)
         element.del_btn.connect("clicked", self.remove_element)
         element.up_btn.connect("clicked", self.move)
         element.down_btn.connect("clicked", self.move)
@@ -158,33 +162,40 @@ class NoteView(Gtk.Box):
 
 
 class Element(Gtk.Box):
-    def __init__(self, data):
+    def __init__(self, data, config, ai_config):
         super().__init__()
         self.container = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        self.create_controls()
         self.data = data
+        self.config = config
+        self.ai_config = ai_config
+        self.create_controls()
         try:
             match self.data["type"]:
                 case "title":
-                    self.main = Title(self.data)
+                    if config["title"]: self.main = Title(self.data)
+                    self.container.append(self.main)
 
                 case "body":
-                    self.main = Body(self.data)
+                    if config["body"]: self.main = Body(self.data)
+                    self.container.append(self.main)
 
                 case "image":
-                    self.main = Image(self.data)
+                    if config["image"]: self.main = Image(self.data)
+                    self.container.append(self.main)
 
                 case "list":
-                    self.main = List(self.data)
+                    if config["list"]: self.main = List(self.data)
+                    self.container.append(self.main)
 
                 case "task":
-                    self.main = Task(self.data)
+                    if config["task"]: self.main = Task(self.data)
+                    self.container.append(self.main)
 
                 case _:
                     self.main = ElementError(self.data, "type")
+                    self.container.append(self.main)
         except:
             self.main = ElementError(self.data, "parse")
-        self.container.append(self.main)
         self.set_tooltip()
 
     def export(self):
@@ -211,10 +222,24 @@ class Element(Gtk.Box):
         self.controls.append(self.del_btn)
         self.controls.append(self.down_btn)
 
+        if self.data["type"] == "body" and self.ai_config["enabled"]:
+            print(f"Adding AI magic with {self.ai_config['model']}")
+            self.ai_btn = Gtk.Button(icon_name="tool-magic-symbolic")
+            set_margins(self.ai_btn, 1)
+            self.controls.append(self.ai_btn)
+            self.ai_container = AiConnector(self.ai_config["api_key"], self.ai_config["model"])
+            self.ai_dialogue = AiGUI()
+            self.ai_btn.connect("clicked", self.new_ai_dialogue)
+
         self.container.append(self.controls)
         set_margins(self.container, 10)
 
         self.append(self.container)
+
+    def new_ai_dialogue(self, *args):
+        self.ai_dialogue.present()
+        print("gue")
+        self.ai_container = AiGUI()
 
 
 class Title(Gtk.Box):
@@ -234,80 +259,106 @@ class Title(Gtk.Box):
 class Body(Gtk.Box):
     def __init__(self, data):
         super().__init__(margin_start=5)
-        print("New Body Object")
         self.main = Gtk.TextView(width_request=100, height_request=16,
                                  hexpand=True, css_classes=["list-item"],
                                  wrap_mode=Gtk.WrapMode.WORD)
         self.append(self.main)
-        self.main.get_buffer().set_text(data["text"])
+        self.main.get_buffer().set_text((data["text"]))
 
     def save(self):
         return {"type": "body", "text": self.main.get_buffer().get_text(self.main.get_buffer().get_start_iter(),
-                                                                        self.main.get_buffer().get_end_iter(), False)}
+                                                                        self.main.get_buffer().get_end_iter(),
+                                                                        False)}
 
 
 class Image(Gtk.Box):
     def __init__(self, data):
-        super().__init__(margin_start=5)
+        super().__init__()
         if data["source"] == "url":
-            # self.main = Gtk.Spinner(hexpand=True, margin_top=40, margin_bottom=40)
-            # self.main.start()
-            # load_process = Process(target=self.load_image_from_url, args=self.data["url"])
-            # self.load_image_from_url(self.data["source"])
-            # load_process.start()
-            # FIXME: Make image loading asynchronous
-            # load_process.join()
-            self.get_image_from_url(data["url"])
+            print(f"Has scale {data['scale']}")
+            self.data = data
+            self.main = Gtk.Spinner(hexpand=True)
+            self.append(self.main)
+            self.main.start()
+            process = threading.Thread(target=self.get_image_from_url)
+            process.start()
 
         elif data["source"] == "file":
             self.main = Gtk.Image.new_from_file(data["file"])
             self.main.set_hexpand(True)
             self.main.set_vexpand(True)
-        self.append(self.main)
+            self.append(self.main)
 
-    def get_image_from_url(self, url):
+    def get_image_from_url(self):
         try:
-            response = requests.get(url, allow_redirects=True)
+            response = requests.get(self.data["url"], allow_redirects=True)
             content = response.content
             loader = GdkPixbuf.PixbufLoader()
             loader.write_bytes(GLib.Bytes.new(content))
             loader.close()
+            self.remove(self.main)
             self.main = Gtk.Image.new_from_pixbuf(loader.get_pixbuf())
-            self.main.set_hexpand(True)
-            self.main.set_vexpand(True)
+            self.main.set_size_request((loader.get_pixbuf().get_width() / self.data["scale"]).__floor__(),
+                                       (loader.get_pixbuf().get_height() / self.data["scale"]).__floor__())
+            # self.main.set_hexpand(True)
+            # self.main.set_vexpand(True)
         except requests.exceptions.ConnectionError:
             self.main = Gtk.Box(orientation=Gtk.Orientation.VERTICAL,
                                 hexpand=True)
             self.main.append(Gtk.Image(icon_name="auth-sim-missing-symbolic"))
             self.main.append(Gtk.Label(label="Unable to get image"))
+        self.append(self.main)
 
     def save(self):
-        pass  # Images are static
+        return self.data  # Images can't be changed, so just return the original data
 
 
 class List(Gtk.Box):
     def __init__(self, data):
         super().__init__(css_name="item-list", margin_start=5)
         self.children = []
-        self.main = Gtk.ListBox(css_name="item-list", selection_mode=Gtk.SelectionMode.NONE)
+        self.main = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        # self.main = Gtk.ListBox(css_name="item-list", selection_mode=Gtk.SelectionMode.NONE)
         for item in data["items"]:
-            self.add_item(text=item)
-        self.append(self.main)
-
-    def add_item(self, source=Gtk.Entry(text=" "), text=""):
-        if source.get_text():  # Prevents new tasks being added when last task is empty
-            item = ListItem(text)
+            item = ListItem(item)
             item.main.connect("activate", self.add_item)
             self.main.append(item)
             item.main.grab_focus()
             self.children.append(item)
+        self.append(self.main)
+
+    def backspace_item(self, widget):
+        self.main.remove(widget.get_parent())
+        self.children.remove(widget.get_parent())
+
+    def add_item(self, widget: Gtk.Entry):
+        if widget.get_text():  # Prevents new tasks being added when last task is empty
+            item = ListItem("")
+            item.main.connect("activate", self.add_item)
+            # item.main.connect("backspace", self.backspace_item)
+            removed = []
+            while True:
+                next = self.main.get_last_child()
+                if next == widget.get_parent():
+                    item = ListItem()
+                    self.children.insert(self.children.index(widget.get_parent()) + 1, item)
+                    self.main.append(item)
+                    for i in removed[::-1]:
+                        self.main.append(i)
+                    break
+                else:
+                    self.main.remove(next)
+                    removed.append(next)
+            item.main.grab_focus()
+            self.children.append(item)
 
     def save(self):
-        return {"type": "list", "items": [i.save() for i in self.children]}
+        # Ensure that there aren't any empty items saved
+        return {"type": "list", "items": [i.save() for i in self.children if i.save()]}
 
 
 class ListItem(Gtk.Box):
-    def __init__(self, text):
+    def __init__(self, text=""):
         super().__init__(css_name="item-list")
         self.append(Gtk.Label(label="•", css_name="bold_point"))
         self.main = Gtk.Entry(text=str(text),
@@ -324,7 +375,8 @@ class Task(Gtk.Box):
     def __init__(self, data):
         super().__init__(css_name="item-list", margin_start=0)
         self.children = []
-        self.main = Gtk.ListBox(css_name="item-list", selection_mode=Gtk.SelectionMode.NONE)
+        self.main = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        # self.main = Gtk.ListBox(css_name="item-list", selection_mode=Gtk.SelectionMode.NONE)
         for item in data["items"]:
             if type(item) == list:
                 self.add_item(task=item)
@@ -369,7 +421,8 @@ class ElementError(Gtk.Box):
         self.data = data
         self.main.append(Gtk.Image(icon_name="dialog-error-symbolic", margin_end=5))
         self.main.append(Gtk.Label(
-            label=f"Unknown type '{self.data['type']}'" if error == "type" else f"Unable to parse element data: {self.data}",
+            label=f"Unknown type '{self.data['type']}'" if error == "type"
+            else "Unable to parse element data",
             halign=Gtk.Align.CENTER))
 
     def save(self):
@@ -388,4 +441,3 @@ def set_margins(widget, num):
             margins(i, num)
     else:
         margins(widget, num)
-

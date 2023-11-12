@@ -3,8 +3,7 @@ from gi.repository import Gdk, Adw
 from FileView import FileWindow
 from ImageInsert import ImageDialogue
 from NoteView import *
-
-path = "Folder"
+from Export import *
 
 
 def log(*args):
@@ -13,9 +12,11 @@ def log(*args):
 
 
 class UI:
-    def __init__(self, window, debug):
+    def __init__(self, window, config, debug):
         global verbose
         verbose = debug
+        self.config = config
+        del config
         log("Building UI...")
 
         # Custom CSS
@@ -23,58 +24,59 @@ class UI:
         css_provider.load_from_path('./src/style.css')
         Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(), css_provider,
                                                   Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
-        self.header = HeaderUI()
+        self.header = HeaderUI(self.config)
         self.inserting_image = False  # Blocks the user from opening multiple image insert windows
         window.set_titlebar(self.header)
 
         main_container = Gtk.Paned()
         main_container.set_position(250)
 
-        # Left pane
-        # File viewer
+        # Left pane - File Viewer
         left_window = Gtk.ScrolledWindow()
         left_viewport = Gtk.Viewport()
         left_window.set_child(left_viewport)
 
-        left_content = FileWindow(path, verbose)
+        left_content = FileWindow(self.config["path"], self.config["colour-support"], verbose)
         left_content.file_viewer.connect("row-activated", self.change_file)
         self.header.setup_new_note(left_content)
         left_viewport.set_child(left_content)
 
         main_container.set_start_child(left_window)
 
-        # Right pane
+        # Right pane - Note View
         right_window = Gtk.ScrolledWindow()
         right_viewport = Gtk.Viewport()
         right_window.set_child(right_viewport)
 
-        self.right_content = NoteView(self.header)
+        self.right_content = NoteView(self.config["elements"], self.config["AI-Configuration"], self.header)
         right_viewport.set_child(self.right_content)
 
         main_container.set_end_child(right_window)
 
         window.set_child(main_container)
 
+        elements = self.config["elements"]
         self.header.save_btn.connect("clicked", self.right_content.save_file)
         self.header.edit_btn.connect("clicked", self.right_content.edit)
-        self.header.new_image_btn.connect("clicked", self.new_image_dialogue)
-        self.header.new_header_btn.connect("clicked", self.new_header)
-        self.header.new_body_btn.connect("clicked", self.new_body)
-        self.header.new_list_btn.connect("clicked", self.new_list)
-        self.header.new_task_btn.connect("clicked", self.new_task)
+        if elements["image"]: self.header.new_image_btn.connect("clicked", self.new_image_dialogue)
+        if elements["title"]: self.header.new_header_btn.connect("clicked", self.new_header)
+        if elements["body"]: self.header.new_body_btn.connect("clicked", self.new_body)
+        if elements["list"]: self.header.new_list_btn.connect("clicked", self.new_list)
+        if elements["task"]: self.header.new_task_btn.connect("clicked", self.new_task)
         self.header.undo_btn.connect("clicked", self.right_content.undo)
+        self.header.export_btn.connect("clicked", self.export)
+
+    def export(self, *args):
+        print("Exporting")
+        export_to_markdown(self.right_content.children)
 
     def change_file(self, file_viewer, row):
-        # self.header.new_image_btn.show()
-        # self.header.new_header_btn.show()
-        # self.header.new_list_btn.show()
-        # self.header.new_task_btn.show()
-        # self.header.new_body_btn.show()
         self.header.new_btn.show()
         self.header.edit_btn.show()
         self.header.save_btn.show()
         self.header.info_btn.hide() # Hide the info button once a note is displayed to reduce clutter
         # self.header.undo_btn.show()
+        self.header.export_btn.show()
         file_path = file_viewer.files[file_viewer.file_rows.index(row)]
         self.right_content.change_file(file_path)
 
@@ -91,7 +93,6 @@ class UI:
         self.right_content.add_element({"type": "task", "items": [["New Task", False]]})
 
     def new_body(self, *args):
-        print("New Body")
         self.header.new_popover.hide()
         self.right_content.add_element({"type": "body", "text": "New Body Text"})
 
@@ -99,7 +100,9 @@ class UI:
         self.header.new_popover.hide()
         if not self.inserting_image:
             log("Opening image dialogue")
-            dialogue = ImageDialogue()
+            sources = self.config["image-configuration"]
+            dialogue = ImageDialogue(sources["url_source"], sources["file_source"], sources["wikimedia_source"],
+                                     sources["web_source"], sources["cache_support"], sources["scale_support"])
             dialogue.present()
             self.inserting_image = True
 
@@ -116,7 +119,7 @@ class UI:
 
 
 class HeaderUI(Gtk.HeaderBar):
-    def __init__(self):
+    def __init__(self, config):
         super().__init__()
         self.set_show_title_buttons(True)
 
@@ -165,29 +168,35 @@ class HeaderUI(Gtk.HeaderBar):
         self.pack_end(self.edit_btn)
 
         # New Header Button
-        self.new_header_btn = Gtk.Button(icon_name="format-text-larger-symbolic",
-                                         tooltip_text="Insert Title")
-        self.new_box.append(self.new_header_btn)
+        elements = config["elements"]
+        if elements["title"]:
+            self.new_header_btn = Gtk.Button(icon_name="format-text-larger-symbolic",
+                                             tooltip_text="Insert Title")
+            self.new_box.append(self.new_header_btn)
 
         # New Image Button
-        self.new_image_btn = Gtk.Button(icon_name="image-x-generic-symbolic",
-                                        tooltip_text="Insert Image")
-        self.new_box.append(self.new_image_btn)
+        if elements["image"]:
+            self.new_image_btn = Gtk.Button(icon_name="image-x-generic-symbolic",
+                                            tooltip_text="Insert Image")
+            self.new_box.append(self.new_image_btn)
 
         # New List Button
-        self.new_list_btn = Gtk.Button(icon_name="task-list-symbolic",
-                                       tooltip_text="Insert List")
-        self.new_box.append(self.new_list_btn)
+        if elements["list"]:
+            self.new_list_btn = Gtk.Button(icon_name="task-list-symbolic",
+                                           tooltip_text="Insert List")
+            self.new_box.append(self.new_list_btn)
 
         # New Task Button
-        self.new_task_btn = Gtk.Button(icon_name="checkbox-checked-symbolic",
-                                       tooltip_text="Insert Task")
-        self.new_box.append(self.new_task_btn)
+        if elements["task"]:
+            self.new_task_btn = Gtk.Button(icon_name="checkbox-checked-symbolic",
+                                           tooltip_text="Insert Task")
+            self.new_box.append(self.new_task_btn)
 
         # New Body Button
-        self.new_body_btn = Gtk.Button(icon_name="tool-text-symbolic",
-                                       tooltip_text="Insert Body Text")
-        self.new_box.append(self.new_body_btn)
+        if elements["body"]:
+            self.new_body_btn = Gtk.Button(icon_name="tool-text-symbolic",
+                                           tooltip_text="Insert Body Text")
+            self.new_box.append(self.new_body_btn)
 
         # Save Button
         self.save_btn = Gtk.Button(icon_name="document-save-symbolic",
@@ -197,6 +206,11 @@ class HeaderUI(Gtk.HeaderBar):
         self.undo_btn = Gtk.Button(icon_name="edit-undo-symbolic",
                                    visible=False)
         self.pack_end(self.undo_btn)
+
+        # Export Button
+        self.export_btn = Gtk.Button(icon_name="document-export-symbolic",
+                                     visible=False)
+        self.pack_end(self.export_btn)
 
     def setup_new_note(self, file_viewer):
         self.new_note_btn.connect("clicked", file_viewer.add_note)

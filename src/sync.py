@@ -6,18 +6,24 @@ import hashlib
 
 # Sync is here
 class Sync:
-    def __init__(self, host, database, user, password, path, verbose=False):
+    def __init__(self, config, verbose):
+        if not config["enabled"]:
+            self.disabled = True
+            return
         try:
-            self.connection = mysql.connector.connect(host=host, database=database, user=user, password=password)
-            self.broken = False
+            self.connection = mysql.connector.connect(host=config["host"],
+                                                      database=config["database"],
+                                                      user=config["username"],
+                                                      password=config["password"])
+            self.disabled = False
         except mysql.connector.errors.DatabaseError:
-            print(f"❌ Unable to reach {user}@{host}, sync disabled")
-            self.broken = True
+            print(f"❌ Unable to reach {config['username']}@{config['database']}, sync disabled")
+            self.disabled = True
             return
         self.cursor = self.connection.cursor()
 
         self.buffer_size = 65536
-        self.path = path
+        self.path = config["path"]
 
         self.uploaded = 0
         self.downloaded = 0
@@ -90,8 +96,8 @@ class Sync:
     def scan_files(self, path):
         out = []
         for i in os.listdir(path):
-            if not isfile(path + "/" + i):
-                out = out + self.scan_files(path + "/" + i)
+            if not isfile(path + "/" + i): # Item is a folder
+                out += self.scan_files(path + "/" + i)
             else:
                 self.log(f"Found file {path + '/' + i}")
                 out.append(path + "/" + i)
@@ -126,7 +132,7 @@ class Sync:
         return md5.hexdigest()
 
     def do(self):
-        if not self.broken:
+        if not self.disabled:
             if not os.path.exists(self.path):
                 self.log("⚠️ New Folder doesn't exist, creating")
                 os.makedirs(self.path)
@@ -161,3 +167,8 @@ class Sync:
               f"⬇️ {self.downloaded} files\n"
               f"⏭️ {self.skipped} files")
         self.uploaded, self.downloaded, self.skipped = 0, 0, 0
+
+    def close(self):
+        print("Closing sync connection...")
+        if not self.disabled:
+            self.connection.close()
