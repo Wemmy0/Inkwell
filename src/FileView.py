@@ -101,7 +101,6 @@ class FileViewer(Gtk.ListBox):
             if not isfile(path + "/" + i):
                 out = out + self.scan_files(path + "/" + i, extension)
             elif extension in i:
-                # Only return .json files
                 out.append(path + "/" + i)
         log(f"Found {len(out)} files in {path}")
         return out
