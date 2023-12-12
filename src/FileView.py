@@ -67,9 +67,10 @@ class FileWindow(Gtk.Box):
 
     def create_new_note(self, *args):
         filename = self.path + "/" + self.file_viewer.get_last_child().get_last_child().get_first_child().get_text() + ".json"
-        print(f"Create new file {filename}")
+        self.file_viewer.json_data[filename] = self.file_viewer.palette[0]
         self.file_viewer.remove(self.get_last_child().get_last_child())
         initialise_json(filename)
+        self.file_viewer.validate_colours()
         self.file_viewer.add_files([filename])
         self.file_viewer.files.append(filename)
         self.creating_new = False  # Allows user to use create new note button again

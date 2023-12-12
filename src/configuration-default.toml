@@ -6,6 +6,8 @@
 path = "Folder"
 # Enable or disable the ability to colour code notes
 colour-support = true
+# Enable or disable the ability to edit notes
+read-only = false
 
 [database]
 enabled = true

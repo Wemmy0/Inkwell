@@ -22,7 +22,7 @@ class MyApp(Adw.Application):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         load_configuration()
-        self.sync = Sync(config["database"], verbose)
+        self.sync = Sync(config, False)
         self.connect('activate', self.on_activate)
 
     def on_activate(self, app):

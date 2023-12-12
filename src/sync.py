@@ -7,6 +7,8 @@ import hashlib
 # Sync is here
 class Sync:
     def __init__(self, config, verbose):
+        self.path = config["path"]
+        config = config["database"]
         if not config["enabled"]:
             self.disabled = True
             return
@@ -16,14 +18,14 @@ class Sync:
                                                       user=config["username"],
                                                       password=config["password"])
             self.disabled = False
-        except mysql.connector.errors.DatabaseError:
+        except mysql.connector.errors.DatabaseError as err:
+            print(err)
             print(f"❌ Unable to reach {config['username']}@{config['database']}, sync disabled")
             self.disabled = True
             return
         self.cursor = self.connection.cursor()
 
         self.buffer_size = 65536
-        self.path = config["path"]
 
         self.uploaded = 0
         self.downloaded = 0
@@ -73,12 +75,16 @@ class Sync:
         self.log("=" * (40 + len(file)))
 
     def update_file(self, file, time, hash):
-        # Purpose: Update file in db if local is newer
-        self.cursor.execute(
-            f"UPDATE test SET modified = {time}, hash = '{hash}', content = %s WHERE filename = '{file}'",
-            (mysql.connector.Binary(self.convert_to_blob(file)),))
-        self.connection.commit()
-        self.uploaded += 1
+        try:
+            # Purpose: Update file in db if local is newer
+            self.cursor.execute(
+                f"UPDATE test SET modified = {time}, hash = '{hash}', content = %s WHERE filename = '{file}'",
+                (mysql.connector.Binary(self.convert_to_blob(file)),))
+            self.connection.commit()
+            self.uploaded += 1
+        except mysql.connector.errors.DataError:
+            self.log(f"⚠️ File {file} is too large, skipping")
+            self.skipped += 1
 
     def create_file(self, filename, content):
         try:
@@ -169,6 +175,6 @@ class Sync:
         self.uploaded, self.downloaded, self.skipped = 0, 0, 0
 
     def close(self):
-        print("Closing sync connection...")
         if not self.disabled:
+            print("Closing sync connection...")
             self.connection.close()

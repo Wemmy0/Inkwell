@@ -48,7 +48,7 @@ class UI:
         right_viewport = Gtk.Viewport()
         right_window.set_child(right_viewport)
 
-        self.right_content = NoteView(self.config["elements"], self.config["AI-Configuration"], self.header)
+        self.right_content = NoteView(self.config["elements"], self.config["AI-Configuration"], self.config["read-only"], self.header)
         right_viewport.set_child(self.right_content)
 
         main_container.set_end_child(right_window)
@@ -68,35 +68,41 @@ class UI:
 
     def export(self, *args):
         print("Exporting")
-        export_to_markdown(self.right_content.children)
+        export_to_markdown(self.right_content.children, self.right_content.filename)
 
     def change_file(self, file_viewer, row):
-        self.header.new_btn.show()
-        self.header.edit_btn.show()
-        self.header.save_btn.show()
+        # Purpose: Show button elements and trigger the change_file function of the note viewer
+        if not self.config["read-only"]:
+            self.header.new_btn.show()
+            self.header.edit_btn.show()
+            self.header.save_btn.show()
+            self.header.export_btn.show()
         self.header.info_btn.hide()  # Hide the info button once a note is displayed to reduce clutter
-        # self.header.undo_btn.show()
-        self.header.export_btn.show()
         file_path = file_viewer.files[file_viewer.file_rows.index(row)]
         self.right_content.change_file(file_path)
 
     def new_header(self, *args):
+        # Purpose: Add new header element
         self.header.new_popover.hide()
         self.right_content.add_element({"type": "title", "text": "Untitled"})
 
     def new_list(self, *args):
+        # Purpose: Add new list element
         self.header.new_popover.hide()
         self.right_content.add_element({"type": "list", "items": ["New List"]})
 
     def new_task(self, *args):
+        # Purpose: Add new task element
         self.header.new_popover.hide()
         self.right_content.add_element({"type": "task", "items": [["New Task", False]]})
 
     def new_body(self, *args):
+        # Purpose: Add new body element
         self.header.new_popover.hide()
         self.right_content.add_element({"type": "body", "text": "New Body Text"})
 
     def new_image_dialogue(self, *args):
+        # Purpose: Create new image dialogue, getting values when "Insert" button is pressed
         self.header.new_popover.hide()
         if not self.inserting_image:
             log("Opening image dialogue")
@@ -122,7 +128,6 @@ class HeaderUI(Gtk.HeaderBar):
     def __init__(self, config):
         super().__init__()
         self.set_show_title_buttons(True)
-
         self.info_btn = Gtk.Button(icon_name="dialog-information-symbolic",
                                    tooltip_text="About")
         self.pack_end(self.info_btn)
@@ -156,6 +161,9 @@ class HeaderUI(Gtk.HeaderBar):
             about_dialogue.present()
 
         self.info_btn.connect("clicked", show_about_dialogue)
+
+        if config["read-only"]:
+            self.pack_end(Gtk.Label(label="Read-Only Mode"))
 
         self.new_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
         self.new_popover = Gtk.Popover(child=self.new_box)

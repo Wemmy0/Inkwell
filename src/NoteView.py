@@ -19,16 +19,20 @@ def edit_style(element, mode):
 
 
 class NoteView(Gtk.Box):
-    def __init__(self, config, ai_config, header):
+    def __init__(self, config, ai_config, read_only, header):
         super().__init__(orientation=Gtk.Orientation.VERTICAL)
         self.config = config
         self.ai_config = ai_config
+        self.read_only = read_only
+        # List of pointers to all children elements as GTK doesn't allow getting a specific
+        # child at index with a Gtk.Box
         self.children = []
         self.header_ui = header
         self.editing = False
         self.history = Stack()
 
     def remove_all(self):
+        # Purpose: Removes all elements when changing a file
         for i in self.children:
             self.remove(i)
         self.children = []
@@ -37,32 +41,23 @@ class NoteView(Gtk.Box):
         self.filename = filename
         self.remove_all()
 
-        # with open(filename, "w+") as file:
-        #     data = file.readlines()
-        #     print(data)
-        #     if not data:
-        #         print(f"{filename} is empty, re-initialising json")
-        #         file.write("{}")
-
         with open(filename, "r") as file:
-            # data = file.readlines()
-            # print(data)
-            # if data == "":
-            #     print("Empty File")
-            # else:
             self.objects = list(json.load(file).values())
 
         for i in self.objects:
             self.add_element(i, True)
 
     def add_element(self, data, loading_file=False):
-        element = Element(data, self.config, self.ai_config)
-        element.del_btn.connect("clicked", self.remove_element)
-        element.up_btn.connect("clicked", self.move)
-        element.down_btn.connect("clicked", self.move)
+        # Purpose: Adds an element when giving json data
+        element = Element(data, self.config, self.ai_config, self.read_only)
+        if not self.read_only:
+            element.del_btn.connect("clicked", self.remove_element)
+            element.up_btn.connect("clicked", self.move)
+            element.down_btn.connect("clicked", self.move)
         self.children.append(element)
         self.append(element)
-        self.can_move()
+        if not self.read_only:
+            self.can_move()
 
         if not loading_file:
             self.header_ui.undo_btn.show()
@@ -79,38 +74,46 @@ class NoteView(Gtk.Box):
             self.header_ui.undo_btn.hide()
 
     def save_file(self, *args):
+        # Purpose: Save all elements in dictionary. Because keys don't matter but have to be unique use a random number
+        # If number already exists, try again
         print(f"Saving {self.filename}")
         out = {}
         with open(self.filename, "w") as file:
             for i in self.children:
-                out[randint(0, 9999)] = i.export()
+                while True:
+                    num = randint(0, 9999)
+                    if num not in out.keys():
+                        out[num] = i.export()
+                        break
             json.dump(out, file)
 
     def edit(self, *args):
-        if not self.editing:
-            self.editing = True
-            for i in self.children:
-                edit_style(i, True)
-        else:
-            self.editing = False
-            for i in self.children:
-                edit_style(i, False)
-        self.save_file()
-        self.change_view_mode()
+        # Purpose:
+        if not self.read_only:
+            if not self.editing:
+                self.editing = True
+                for i in self.children:
+                    edit_style(i, True)
+            else:
+                self.editing = False
+                for i in self.children:
+                    edit_style(i, False)
+            self.save_file()
+            self.toggle_edit_btn()
 
-    def change_view_mode(self):
-        current_mode = self.header_ui.edit_btn.get_icon_name()
-        match current_mode:
-            case "ymuse-edit-symbolic":
-                # Toggle to view mode
-                self.header_ui.edit_btn.set_icon_name("ephy-reader-mode-symbolic")
-                self.header_ui.edit_btn.set_tooltip_text("Switch to view mode")
-            case "ephy-reader-mode-symbolic":
-                # Toggle to edit mode
-                self.header_ui.edit_btn.set_icon_name("ymuse-edit-symbolic")
-                self.header_ui.edit_btn.set_tooltip_text("Switch to edit mode")
+    def toggle_edit_btn(self):
+        # Purpose: Flip the icon and tooltip of the edit button depending on mode
+        if self.editing:
+            # Toggle to view mode
+            self.header_ui.edit_btn.set_icon_name("ephy-reader-mode-symbolic")
+            self.header_ui.edit_btn.set_tooltip_text("Switch to view mode")
+        else:
+            # Toggle to edit mode
+            self.header_ui.edit_btn.set_icon_name("ymuse-edit-symbolic")
+            self.header_ui.edit_btn.set_tooltip_text("Switch to edit mode")
 
     def remove_element(self, button):
+        # Purpose: Removes an element when the bin button is clicked
         element = button.get_parent().get_parent().get_parent()
         element.hide()
         self.children.remove(element)
@@ -133,7 +136,7 @@ class NoteView(Gtk.Box):
         # Get all children to be affected
         # If up: Gets all the children at one above the moved element and below
         elements = self.children[row_no - 1:] if button.get_icon_name() == "go-up-symbolic" else self.children[row_no:]
-        # remove all children one up and the rest below
+        # Remove all children one up and the rest below
         for i in elements:
             self.remove(i)
             self.children.remove(i)
@@ -162,33 +165,38 @@ class NoteView(Gtk.Box):
 
 
 class Element(Gtk.Box):
-    def __init__(self, data, config, ai_config):
+    def __init__(self, data, config, ai_config, read_only):
         super().__init__()
         self.container = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         self.data = data
         self.config = config
         self.ai_config = ai_config
-        self.create_controls()
+        self.read_only = read_only
+        if not read_only:
+            self.create_controls()
+        set_margins(self.container, 10)
+        self.append(self.container)
         try:
             match self.data["type"]:
                 case "title":
-                    if config["title"]: self.main = Title(self.data)
+                    print("Title")
+                    if config["title"]: self.main = Title(self.data, read_only)
                     self.container.append(self.main)
 
                 case "body":
-                    if config["body"]: self.main = Body(self.data)
+                    if config["body"]: self.main = Body(self.data, read_only)
                     self.container.append(self.main)
 
                 case "image":
-                    if config["image"]: self.main = Image(self.data)
+                    if config["image"]: self.main = Image(self.data, read_only)
                     self.container.append(self.main)
 
                 case "list":
-                    if config["list"]: self.main = List(self.data)
+                    if config["list"]: self.main = List(self.data, read_only)
                     self.container.append(self.main)
 
                 case "task":
-                    if config["task"]: self.main = Task(self.data)
+                    if config["task"]: self.main = Task(self.data, read_only)
                     self.container.append(self.main)
 
                 case _:
@@ -210,6 +218,7 @@ class Element(Gtk.Box):
             pass
 
     def create_controls(self):
+        # Purpose: Created the UI elements for edit mode (hidden by default)
         self.controls = Gtk.Box(orientation=Gtk.Orientation.VERTICAL,
                                 halign=Gtk.Align.END,
                                 valign=Gtk.Align.CENTER,
@@ -222,6 +231,12 @@ class Element(Gtk.Box):
         self.controls.append(self.del_btn)
         self.controls.append(self.down_btn)
 
+        self.create_ai()
+
+        self.container.append(self.controls)
+
+    def create_ai(self):
+        # Purpose: Creates AI elements if AI is enabled in the config
         if self.data["type"] == "body" and self.ai_config["enabled"]:
             print(f"Adding AI magic with {self.ai_config['model']}")
             self.ai_btn = Gtk.Button(icon_name="tool-magic-symbolic")
@@ -231,25 +246,20 @@ class Element(Gtk.Box):
             self.ai_dialogue = AiGUI()
             self.ai_btn.connect("clicked", self.new_ai_dialogue)
 
-        self.container.append(self.controls)
-        set_margins(self.container, 10)
-
-        self.append(self.container)
-
     def new_ai_dialogue(self, *args):
         self.ai_dialogue.present()
-        print("gue")
         self.ai_container = AiGUI()
 
 
 class Title(Gtk.Box):
-    def __init__(self, data):
+    def __init__(self, data, read_only):
         super().__init__(margin_start=0)
         self.main = Gtk.Entry(text=data["text"],
                               css_name="title",
                               halign=Gtk.Align.START,
                               width_request=400,
-                              height_request=10)
+                              height_request=10,
+                              editable=not read_only)
         self.append(self.main)
 
     def save(self):
@@ -257,7 +267,7 @@ class Title(Gtk.Box):
 
 
 class Body(Gtk.Box):
-    def __init__(self, data):
+    def __init__(self, data, read_only):
         super().__init__(margin_start=5)
         self.main = Gtk.TextView(width_request=100, height_request=16,
                                  hexpand=True, css_classes=["list-item"],
@@ -272,7 +282,7 @@ class Body(Gtk.Box):
 
 
 class Image(Gtk.Box):
-    def __init__(self, data):
+    def __init__(self, data, read_only):
         super().__init__()
         if data["source"] == "url":
             print(f"Has scale {data['scale']}")
@@ -314,7 +324,7 @@ class Image(Gtk.Box):
 
 
 class List(Gtk.Box):
-    def __init__(self, data):
+    def __init__(self, data, read_only):
         super().__init__(css_name="item-list", margin_start=5)
         self.children = []
         self.main = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -333,14 +343,13 @@ class List(Gtk.Box):
 
     def add_item(self, widget: Gtk.Entry):
         if widget.get_text():  # Prevents new tasks being added when last task is empty
-            item = ListItem("")
-            item.main.connect("activate", self.add_item)
             # item.main.connect("backspace", self.backspace_item)
             removed = []
             while True:
                 next = self.main.get_last_child()
                 if next == widget.get_parent():
-                    item = ListItem()
+                    item = ListItem("")
+                    item.main.connect("activate", self.add_item)
                     self.children.insert(self.children.index(widget.get_parent()) + 1, item)
                     self.main.append(item)
                     for i in removed[::-1]:
@@ -372,7 +381,7 @@ class ListItem(Gtk.Box):
 
 
 class Task(Gtk.Box):
-    def __init__(self, data):
+    def __init__(self, data, read_only):
         super().__init__(css_name="item-list", margin_start=0)
         self.children = []
         self.main = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
