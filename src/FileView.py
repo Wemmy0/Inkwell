@@ -82,16 +82,18 @@ class FileViewer(Gtk.ListBox):
         self.set_vexpand(True)
         self.path = path
         self.colour_support = colour_support
-        self.blacklist = [path + "/colours.json"]
+        self.blacklist = ["colours.json"]
 
         self.palette = os.listdir("Assets")
         self.files = self.scan_files(path, "json")
 
+        self.initialise_colours()
+
         # Remove files that are in the blacklist
         for i in self.blacklist:
-            self.files.remove(i)
-
-        self.initialise_colours()
+            for l in self.files:
+                if i in l:
+                    self.files.remove(l)
         self.file_rows = []
         self.add_files(self.files)
 

@@ -179,7 +179,6 @@ class Element(Gtk.Box):
         try:
             match self.data["type"]:
                 case "title":
-                    print("Title")
                     if config["title"]: self.main = Title(self.data, read_only)
                     self.container.append(self.main)
 
