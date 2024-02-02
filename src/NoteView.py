@@ -284,7 +284,6 @@ class Image(Gtk.Box):
     def __init__(self, data, read_only):
         super().__init__()
         if data["source"] == "url":
-            print(f"Has scale {data['scale']}")
             self.data = data
             self.main = Gtk.Spinner(hexpand=True)
             self.append(self.main)
@@ -307,15 +306,17 @@ class Image(Gtk.Box):
             loader.close()
             self.remove(self.main)
             self.main = Gtk.Image.new_from_pixbuf(loader.get_pixbuf())
-            self.main.set_size_request((loader.get_pixbuf().get_width() / self.data["scale"]).__floor__(),
-                                       (loader.get_pixbuf().get_height() / self.data["scale"]).__floor__())
-            # self.main.set_hexpand(True)
-            # self.main.set_vexpand(True)
-        except requests.exceptions.ConnectionError:
+            self.main.set_size_request((loader.get_pixbuf().get_width() * self.data["scale"]).__floor__(),
+                                       (loader.get_pixbuf().get_height() * self.data["scale"]).__floor__())
+            self.main.set_vexpand(True)
+        except (requests.exceptions.ConnectionError, requests.exceptions.MissingSchema) as err:
+            self.remove(self.main)
             self.main = Gtk.Box(orientation=Gtk.Orientation.VERTICAL,
                                 hexpand=True)
             self.main.append(Gtk.Image(icon_name="auth-sim-missing-symbolic"))
-            self.main.append(Gtk.Label(label="Unable to get image"))
+            self.main.append(Gtk.Label(label="Unable to get image" + (" - No internet connection"
+                                                                      if isinstance(err, requests.exceptions.ConnectionError)
+                                                                      else " - Invalid URL")))
         self.append(self.main)
 
     def save(self):

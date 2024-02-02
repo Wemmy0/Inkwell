@@ -21,7 +21,7 @@ class Queue:
         return self._data
 
     def en_queue(self, item):
-        if not self.size == len(self._data):
+        if self.size != len(self._data):
             self._data.append(item)
         else:
             raise self.FullQueue

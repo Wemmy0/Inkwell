@@ -2,10 +2,9 @@ from gi.repository import Gtk, Adw
 
 
 class ImageDialogue(Gtk.Window):
-    def __init__(self, url_source, file_source, wikimedia_source, web_source, cache_support, scale_support):
+    def __init__(self, url_source, file_source, wikimedia_source, web_source, cache_support):
         super().__init__()
         self.cache_support = cache_support
-        self.scale_support = scale_support
         self.set_title("Insert Image")
 
         self.page = Adw.PreferencesPage()
@@ -80,17 +79,16 @@ class ImageDialogue(Gtk.Window):
         # endregion
 
         # region Scale slider
-        # TODO: Actually do this
-        if self.scale_support:
-            self.scale_row = Adw.ActionRow(visible=False)
-            self.scale_slider = Gtk.Scale(round_digits=1)
-            self.scale_slider.set_range(0, 10)
-            for i in range(1, 10):
-                self.scale_slider.add_mark(i, Gtk.PositionType.BOTTOM)
-            # self.scale_slider.add_mark(1, Gtk.PositionType.BOTTOM)
-            # # self.scale_slider = Gtk.Range()
-            # self.scale_row.add_suffix(self.scale_slider)
-            self.group.add(self.scale_slider)
+        self.scale_row = Adw.ActionRow(visible=False)
+        self.scale_slider = Gtk.Scale(round_digits=1)
+        self.scale_slider.set_range(0, 1.5)
+        self.scale_slider.set_digits(True)
+        for i in range(0, 15):
+            self.scale_slider.add_mark(i/10, Gtk.PositionType.BOTTOM)
+        # self.scale_slider.add_mark(1, Gtk.PositionType.BOTTOM)
+        # # self.scale_slider = Gtk.Range()
+        # self.scale_row.add_suffix(self.scale_slider)
+        self.group.add(self.scale_slider)
 
         # region Tooltip
         self.tooltip_row = Adw.ActionRow(title="Description",
@@ -127,8 +125,7 @@ class ImageDialogue(Gtk.Window):
         self.file_row.hide()
         self.wikipedia_row.hide()
         self.web_embed_row.hide()
-        if self.scale_support:
-            self.scale_slider.hide()
+        self.scale_slider.hide()
         if self.cache_support:
             self.cache_image_row.hide()
         self.tooltip_row.show()
@@ -137,7 +134,6 @@ class ImageDialogue(Gtk.Window):
                 self.url_row.show()
                 if self.cache_support:
                     self.cache_image_row.show()
-                if self.scale_support:
                     self.scale_slider.show()
             case "Local File":
                 self.file_row.show()
@@ -165,13 +161,13 @@ class ImageDialogue(Gtk.Window):
         file = self.file_entry.get_text()
         tooltip = self.tooltip_entry.get_text()
         scale = self.scale_slider.get_value()
-        cache = self.cache_image_switch.get_state()
+        # cache = self.cache_image_switch.get_state()
         sources = {"URL": "url", "Local File": "file", "Wikipedia": "wikimedia"}
         data = {"type": "image" if source_dropdown != "Web Embed" else "iframe",
                 "source": sources[source_dropdown],
                 "url": url,
                 "file": file,
                 "scale": scale,
-                "tooltip": tooltip,
-                "cache": cache}
+                "tooltip": tooltip}
+                # "cache": cache}
         return data

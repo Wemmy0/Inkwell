@@ -108,7 +108,7 @@ class UI:
             log("Opening image dialogue")
             sources = self.config["image-configuration"]
             dialogue = ImageDialogue(sources["url_source"], sources["file_source"], sources["wikimedia_source"],
-                                     sources["web_source"], sources["cache_support"], sources["scale_support"])
+                                     sources["web_source"], sources["cache_support"])
             dialogue.present()
             self.inserting_image = True
 
