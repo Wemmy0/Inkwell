@@ -187,7 +187,7 @@ class Element(Gtk.Box):
                     self.container.append(self.main)
 
                 case "image":
-                    if config["image"]: self.main = Image(self.data, read_only)
+                    if config["image"]: self.main = Image(self.data)
                     self.container.append(self.main)
 
                 case "list":
@@ -281,10 +281,10 @@ class Body(Gtk.Box):
 
 
 class Image(Gtk.Box):
-    def __init__(self, data, read_only):
+    def __init__(self, data):
         super().__init__()
+        self.data = data
         if data["source"] == "url":
-            self.data = data
             self.main = Gtk.Spinner(hexpand=True)
             self.append(self.main)
             self.main.start()
