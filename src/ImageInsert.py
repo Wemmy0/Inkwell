@@ -85,7 +85,7 @@ class ImageDialogue(Gtk.Window):
         self.scale_slider.set_range(0, 1.5)
         self.scale_slider.set_digits(True)
         for i in range(0, 15):
-            self.scale_slider.add_mark(i/10, Gtk.PositionType.BOTTOM)
+            self.scale_slider.add_mark(i / 10, Gtk.PositionType.BOTTOM)
         # self.scale_slider.add_mark(1, Gtk.PositionType.BOTTOM)
         # # self.scale_slider = Gtk.Range()
         # self.scale_row.add_suffix(self.scale_slider)
@@ -170,5 +170,5 @@ class ImageDialogue(Gtk.Window):
                 "file": file,
                 "scale": scale,
                 "tooltip": tooltip}
-                # "cache": cache}
+        # "cache": cache}
         return data
