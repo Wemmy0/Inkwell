@@ -325,7 +325,7 @@ class Image(Gtk.Box):
 
 
 class List(Gtk.Box):
-    def __init__(self, data, read_only):
+    def __init__(self, data):
         super().__init__(css_name="item-list", margin_start=5)
         self.children = []
         self.main = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -382,7 +382,7 @@ class ListItem(Gtk.Box):
 
 
 class Task(Gtk.Box):
-    def __init__(self, data, read_only):
+    def __init__(self, data):
         super().__init__(css_name="item-list", margin_start=0)
         self.children = []
         self.main = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)

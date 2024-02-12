@@ -48,7 +48,8 @@ class UI:
         right_viewport = Gtk.Viewport()
         right_window.set_child(right_viewport)
 
-        self.right_content = NoteView(self.config["elements"], self.config["AI-Configuration"], self.config["read-only"], self.header)
+        self.right_content = NoteView(self.config["elements"], self.config["AI-Configuration"],
+                                      self.config["read-only"], self.header)
         right_viewport.set_child(self.right_content)
 
         main_container.set_end_child(right_window)
@@ -237,10 +238,3 @@ class HeaderUI(Gtk.HeaderBar):
 
     def setup_new_note(self, file_viewer):
         self.new_note_btn.connect("clicked", file_viewer.add_note)
-
-
-def set_margins(widget, num):
-    widget.set_margin_start(num)
-    widget.set_margin_end(num)
-    widget.set_margin_top(num)
-    widget.set_margin_bottom(num)
