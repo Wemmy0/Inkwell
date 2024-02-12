@@ -20,7 +20,7 @@ class Sync:
             self.disabled = False
         except mysql.connector.errors.DatabaseError as err:
             print(err)
-            print(f"❌ Unable to reach {config['username']}@{config['database']}, sync disabled")
+            print(f"❌ Unable to reach {config['username']}@{config['host']}, sync disabled")
             self.disabled = True
             return
         self.cursor = self.connection.cursor()

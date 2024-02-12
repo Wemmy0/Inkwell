@@ -15,14 +15,18 @@ class ImageDialogue(Gtk.Window):
         self.page.add(self.group)
 
         # region source
-        self.select_source_row = Adw.ActionRow(title="Select Image Source",
-                                               subtitle="Please choose where the image is located")
-        self.source_dropdown = Gtk.ComboBoxText(valign=Gtk.Align.CENTER)
+        self.select_source_row = Adw.ActionRow(title="Image Source",
+                                               subtitle="The source of the image")
+        self.source_dropdown = Gtk.ComboBoxText(valign=Gtk.Align.CENTER, )
 
-        if url_source: self.source_dropdown.append_text("URL")
-        if file_source: self.source_dropdown.append_text("Local File")
-        if wikimedia_source: self.source_dropdown.append_text("Wikimedia")
-        if web_source: self.source_dropdown.append_text("Web Embed")
+        if url_source:
+            self.source_dropdown.append_text("URL")
+        if file_source:
+            self.source_dropdown.append_text("Local File")
+        if wikimedia_source:
+            self.source_dropdown.append_text("Wikimedia")
+        if web_source:
+            self.source_dropdown.append_text("Web Embed")
 
         self.source_dropdown.connect('changed', self.select_source)
         self.select_source_row.add_suffix(self.source_dropdown)
@@ -30,9 +34,9 @@ class ImageDialogue(Gtk.Window):
         # endregion
 
         # region URL Entry
-        self.url_row = Adw.ActionRow(title="URL of the file",
+        self.url_row = Adw.ActionRow(title="URL location",
                                      visible=False)
-        self.url_entry = Gtk.Entry(placeholder_text="http://example.com/image.png",
+        self.url_entry = Gtk.Entry(placeholder_text="https://example.com/image.png",
                                    valign=Gtk.Align.CENTER)
         self.url_row.add_suffix(self.url_entry)
         self.group.add(self.url_row)
