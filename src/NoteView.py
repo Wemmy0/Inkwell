@@ -191,11 +191,11 @@ class Element(Gtk.Box):
                     self.container.append(self.main)
 
                 case "list":
-                    if config["list"]: self.main = List(self.data, read_only)
+                    if config["list"]: self.main = List(self.data)
                     self.container.append(self.main)
 
                 case "task":
-                    if config["task"]: self.main = Task(self.data, read_only)
+                    if config["task"]: self.main = Task(self.data)
                     self.container.append(self.main)
 
                 case _:
@@ -315,7 +315,8 @@ class Image(Gtk.Box):
                                 hexpand=True)
             self.main.append(Gtk.Image(icon_name="auth-sim-missing-symbolic"))
             self.main.append(Gtk.Label(label="Unable to get image" + (" - No internet connection"
-                                                                      if isinstance(err, requests.exceptions.ConnectionError)
+                                                                      if isinstance(err,
+                                                                                    requests.exceptions.ConnectionError)
                                                                       else " - Invalid URL")))
         self.append(self.main)
 

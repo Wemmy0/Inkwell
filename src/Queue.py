@@ -18,7 +18,7 @@ class Queue:
         return len(self._data)
 
     def __iter__(self):
-        return self._data
+        return iter(self._data)
 
     def en_queue(self, item):
         if self.size != len(self._data):

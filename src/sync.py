@@ -44,7 +44,7 @@ class Sync:
         return blob_data
 
     def compare_files(self, file):
-        self.cursor.execute(f"SELECT hash FROM test WHERE filename = '{file}'")
+        self.cursor.execute(f"SELECT hash FROM test WHERE filename = %s", (file,))
         db_hash = self.cursor.fetchall()[0][0]
         local_hash = self.hash_file(file)
         self.log("=" * 20 + file + "=" * 20)
@@ -56,7 +56,7 @@ class Sync:
             self.skipped += 1
         else:
             self.log("Hashes don't match, checking timestamps")
-            self.cursor.execute(f"SELECT modified FROM test WHERE filename = '{file}'")
+            self.cursor.execute(f"SELECT modified FROM test WHERE filename = %s", (file,))
             db_timestamp = int(self.cursor.fetchall()[0][0])
             local_timestamp = round(os.path.getctime(file))
             self.log(f"Local timestamp: {local_timestamp}")
@@ -78,8 +78,8 @@ class Sync:
         try:
             # Purpose: Update file in db if local is newer
             self.cursor.execute(
-                f"UPDATE test SET modified = {time}, hash = '{hash}', content = %s WHERE filename = '{file}'",
-                (mysql.connector.Binary(self.convert_to_blob(file)),))
+                "UPDATE test SET modified = %s, hash = %s, content = %s WHERE filename = %s",
+                (time, hash, mysql.connector.Binary(self.convert_to_blob(file)), file,))
             self.connection.commit()
             self.uploaded += 1
         except mysql.connector.errors.DataError:
@@ -111,7 +111,7 @@ class Sync:
 
     def download_file(self, file):
         # Purpose: Download file from db if db is newer
-        self.cursor.execute(f"SELECT content FROM test WHERE filename = '{file}'")
+        self.cursor.execute("SELECT content FROM test WHERE filename = %s", (file,))
         content = self.cursor.fetchall()[0][0]
         self.create_file(file, content)
         self.downloaded += 1
@@ -119,8 +119,8 @@ class Sync:
     def upload_file(self, file):
         try:
             self.cursor.execute(
-                f"INSERT INTO test value('{file}', '{round(os.path.getctime(file))}', '{self.hash_file(file)}', %s)",
-                (mysql.connector.Binary(self.convert_to_blob(file)),))
+                "INSERT INTO test value(%s, %s, %s, %s)",
+                (file, round(os.path.getctime(file)), self.hash_file(file), mysql.connector.Binary(self.convert_to_blob(file)),))
             self.connection.commit()
             self.uploaded += 1
         except mysql.connector.errors.DataError:
@@ -178,3 +178,4 @@ class Sync:
         if not self.disabled:
             print("Closing sync connection...")
             self.connection.close()
+

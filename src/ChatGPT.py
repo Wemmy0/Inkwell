@@ -1,6 +1,7 @@
 # Simple object which connects to the ChatGPT API
 import openai
-from gi.repository import Gtk, Adw
+from gi.repository import Gtk
+from gi.repository import Adw  # pylint: disable=no-name-in-module
 
 
 class AiGUI(Gtk.Window):

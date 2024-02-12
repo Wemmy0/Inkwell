@@ -5,7 +5,8 @@ import tomllib
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 
-from gi.repository import Gtk, Adw
+from gi.repository import Gtk
+from gi.repository import Adw  # pylint: disable=no-name-in-module
 
 from ui import UI
 from sync import Sync

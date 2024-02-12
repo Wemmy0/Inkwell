@@ -1,4 +1,5 @@
-from gi.repository import Gdk, Adw
+from gi.repository import Gtk, Gdk
+from gi.repository import Adw  # pylint: disable=no-name-in-module
 
 from FileView import FileWindow
 from ImageInsert import ImageDialogue
@@ -16,7 +17,6 @@ class UI:
         global verbose
         verbose = debug
         self.config = config
-        del config
         log("Building UI...")
 
         # Custom CSS

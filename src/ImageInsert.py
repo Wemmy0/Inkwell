@@ -1,4 +1,5 @@
-from gi.repository import Gtk, Adw
+from gi.repository import Gtk
+from gi.repository import Adw  # pylint: disable=no-name-in-module
 
 
 class ImageDialogue(Gtk.Window):

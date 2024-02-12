@@ -20,15 +20,11 @@ class FileWindow(Gtk.Box):
         self.set_orientation(Gtk.Orientation.VERTICAL)
 
         # Search bar
-        self.search_entry = Gtk.SearchEntry()
+        self.search_entry = Gtk.SearchEntry(placeholder_text="Search Notes/Tasks",
+                                            search_delay=100)
         set_margins(self.search_entry, 2)
-        self.search_entry.set_placeholder_text("Search Notes/Tasks")
         self.search_entry.set_tooltip_text("Tip: You can search by the name of the colour")
-        # self.search_entry.set_tooltip_text("Search Notes/Tasks")
         self.search_entry.connect("search-changed", self.search)
-
-        # Decreasing reduces time to see results, increasing reduces no. of searches
-        self.search_entry.set_search_delay(100)
 
         self.file_viewer = FileViewer(path, self.colour_support)
 
