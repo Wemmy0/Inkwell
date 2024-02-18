@@ -179,13 +179,6 @@ class HeaderUI(Gtk.HeaderBar):
                                        tooltip_text="New Note")
         self.pack_start(self.new_note_btn)
 
-        # View mode button (Remove - not a priority)
-        # self.view_mode_btn = Gtk.Button()
-        # self.view_mode_btn.set_icon_name("org.gnome.gedit-symbolic")
-        # self.view_mode_btn.set_tooltip_text("Switch to view mode")
-        # self.view_mode_btn.connect("clicked", change_view_mode)
-        # self.pack_end(self.view_mode_btn)
-
         # Edit Button
         self.edit_btn = Gtk.Button(icon_name="ymuse-edit-symbolic",
                                    visible=False)

@@ -21,6 +21,8 @@ def edit_style(element, mode):
 class NoteView(Gtk.Box):
     def __init__(self, config, ai_config, read_only, header):
         super().__init__(orientation=Gtk.Orientation.VERTICAL)
+        self.objects = None
+        self.filename = None
         self.config = config
         self.ai_config = ai_config
         self.read_only = read_only
@@ -38,6 +40,7 @@ class NoteView(Gtk.Box):
         self.children = []
 
     def change_file(self, filename):
+        # Purpose: Called to change the file to view
         self.filename = filename
         self.remove_all()
 
@@ -67,7 +70,6 @@ class NoteView(Gtk.Box):
             edit_style(element, True)
 
     def undo(self, *args):
-        print("Undoing...")
         self.remove(self.history.pop())
 
         if self.history.is_empty():
@@ -165,8 +167,16 @@ class NoteView(Gtk.Box):
 
 
 class Element(Gtk.Box):
+    # Purpose: A general 'harness' to 
     def __init__(self, data, config, ai_config, read_only):
         super().__init__()
+        self.ai_dialogue = None
+        self.ai_container = None
+        self.ai_btn = None
+        self.up_btn = None
+        self.del_btn = None
+        self.down_btn = None
+        self.controls = None
         self.container = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         self.data = data
         self.config = config
@@ -179,23 +189,28 @@ class Element(Gtk.Box):
         try:
             match self.data["type"]:
                 case "title":
-                    if config["title"]: self.main = Title(self.data, read_only)
+                    if config["title"]:
+                        self.main = Title(self.data, read_only)
                     self.container.append(self.main)
 
                 case "body":
-                    if config["body"]: self.main = Body(self.data, read_only)
+                    if config["body"]:
+                        self.main = Body(self.data, read_only)
                     self.container.append(self.main)
 
                 case "image":
-                    if config["image"]: self.main = Image(self.data)
+                    if config["image"]:
+                        self.main = Image(self.data)
                     self.container.append(self.main)
 
                 case "list":
-                    if config["list"]: self.main = List(self.data)
+                    if config["list"]:
+                        self.main = List(self.data)
                     self.container.append(self.main)
 
                 case "task":
-                    if config["task"]: self.main = Task(self.data)
+                    if config["task"]:
+                        self.main = Task(self.data)
                     self.container.append(self.main)
 
                 case _:
@@ -329,7 +344,6 @@ class List(Gtk.Box):
         super().__init__(css_name="item-list", margin_start=5)
         self.children = []
         self.main = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        # self.main = Gtk.ListBox(css_name="item-list", selection_mode=Gtk.SelectionMode.NONE)
         for item in data["items"]:
             item = ListItem(item)
             item.main.connect("activate", self.add_item)
@@ -344,7 +358,6 @@ class List(Gtk.Box):
 
     def add_item(self, widget: Gtk.Entry):
         if widget.get_text():  # Prevents new tasks being added when last task is empty
-            # item.main.connect("backspace", self.backspace_item)
             removed = []
             while True:
                 next = self.main.get_last_child()
@@ -386,7 +399,6 @@ class Task(Gtk.Box):
         super().__init__(css_name="item-list", margin_start=0)
         self.children = []
         self.main = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        # self.main = Gtk.ListBox(css_name="item-list", selection_mode=Gtk.SelectionMode.NONE)
         for item in data["items"]:
             if type(item) == list:
                 self.add_item(task=item)
@@ -440,11 +452,11 @@ class ElementError(Gtk.Box):
 
 
 def set_margins(widget, num):
-    def margins(x, num):
-        x.set_margin_start(num)
-        x.set_margin_end(num)
-        x.set_margin_top(num)
-        x.set_margin_bottom(num)
+    def margins(x, margin):
+        x.set_margin_start(margin)
+        x.set_margin_end(margin)
+        x.set_margin_top(margin)
+        x.set_margin_bottom(margin)
 
     if type(widget) == list:
         for i in widget:

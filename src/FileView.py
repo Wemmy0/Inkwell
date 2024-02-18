@@ -62,6 +62,7 @@ class FileWindow(Gtk.Box):
             self.creating_new = True  # Block the user from creating another note whilst making another
 
     def create_new_note(self, *args):
+        # Please don't look at this line
         filename = self.path + "/" + self.file_viewer.get_last_child().get_last_child().get_first_child().get_text() + ".json"
         self.file_viewer.json_data[filename] = self.file_viewer.palette[0]
         self.file_viewer.remove(self.get_last_child().get_last_child())
@@ -229,7 +230,7 @@ class FileViewRow(Gtk.Box):
 
 def initialise_json(filename):
     # If json file isn't found, create it with json {}
-    print(f"{filename} doesn't exist. Creating")
+    log(f"{filename} doesn't exist. Creating")
     with open(filename, "w+") as file:
         file.write("{}")
 

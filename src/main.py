@@ -22,6 +22,7 @@ class MainWindow(Gtk.ApplicationWindow):
 class MyApp(Adw.Application):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.win = None
         load_configuration()
         self.sync = Sync(config, False)
         self.connect('activate', self.on_activate)
