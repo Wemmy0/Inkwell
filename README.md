@@ -1,7 +1,8 @@
 # Inkwell
+![](Assets/UI.png)
 [![Pylint](https://github.com/Wemmy0/Inkwell/actions/workflows/pylint.yml/badge.svg)](https://github.com/Wemmy0/Inkwell/actions/workflows/pylint.yml)
 
-A minimalistic notes app written in GTK4 and Python
+A minimalistic rich text notes app written in GTK4 and Python
 
 ### Running from source (Fedora):
 1. Clone repo using Github CLI

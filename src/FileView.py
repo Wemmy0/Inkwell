@@ -81,7 +81,7 @@ class FileViewer(Gtk.ListBox):
         self.colour_support = colour_support
         self.blacklist = ["colours.json"]
 
-        self.palette = os.listdir("Assets")
+        self.palette = os.listdir("Colours")
         self.files = self.scan_files(path, "json")
 
         self.initialise_colours()
@@ -175,7 +175,7 @@ class FileViewRow(Gtk.Box):
         # Image containing circle, popout to selector of colour
         self.image = Gtk.Image()
         self.current_colours = current_colours
-        self.current_colour = "Assets/" + current_colours[self.filename]
+        self.current_colour = "Colours/" + current_colours[self.filename]
 
         self.image.set_from_file(self.current_colour)
         self.json_file = json_file
@@ -208,8 +208,8 @@ class FileViewRow(Gtk.Box):
         container = Gtk.ListBox()
 
         for i in self.palette:
-            container.append(Gtk.Image(file="Assets/" + i))
-        container.select_row(container.get_row_at_index(self.palette.index(self.current_colour.replace("Assets/", ""))))
+            container.append(Gtk.Image(file="Colours/" + i))
+        container.select_row(container.get_row_at_index(self.palette.index(self.current_colour.replace("Colours/", ""))))
         container.connect("row-selected", self.change_colour)
 
         self.popover.set_child(container)
@@ -219,7 +219,7 @@ class FileViewRow(Gtk.Box):
         old_colour = self.current_colours[self.filename]
 
         if new_colour != old_colour:
-            self.image.set_from_file("Assets/" + new_colour)
+            self.image.set_from_file("Colours/" + new_colour)
             self.current_colours[self.filename] = self.palette[row.get_index()]
 
             with open(self.json_file, "w") as file:

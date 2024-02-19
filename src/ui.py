@@ -148,7 +148,7 @@ class HeaderUI(Gtk.HeaderBar):
                                                        "<li>Fixed highlighting of task/list items</li>"
                                                        "<li>Sync, Elements, AI and more can be enabled/disabled in the config file</li>"
                                                        "<li>Fixed a crash when sync connection was invalid but was attempted to be closed anyway</li>"
-                                                       "<li>Colours can be added/removed from the Assets/ folder</li>"
+                                                       "<li>Colours can be added/removed from the Colours/ folder</li>"
                                                        "</ul>"
                                                        "<p>1.2:</p>"
                                                        "<ul>"

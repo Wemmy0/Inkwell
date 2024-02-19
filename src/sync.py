@@ -43,32 +43,32 @@ class Sync:
         self.cursor.execute(f"SELECT hash FROM test WHERE filename = %s", (file,))
         db_hash = self.cursor.fetchall()[0][0]
         local_hash = self.hash_file(file)
-        log("=" * 20 + file + "=" * 20)
-        log(f"Local Hash: {local_hash}")
-        log(f"DB Hash: {db_hash}")
+        self.log("=" * 20 + file + "=" * 20)
+        self.log(f"Local Hash: {local_hash}")
+        self.log(f"DB Hash: {db_hash}")
 
         if local_hash == db_hash:
-            log("Hashes match, skipping file")
+            self.log("Hashes match, skipping file")
             self.skipped += 1
         else:
-            log("Hashes don't match, checking timestamps")
+            self.log("Hashes don't match, checking timestamps")
             self.cursor.execute(f"SELECT modified FROM test WHERE filename = %s", (file,))
             db_timestamp = int(self.cursor.fetchall()[0][0])
             local_timestamp = round(os.path.getctime(file))
-            log(f"Local timestamp: {local_timestamp}")
-            log(f"DB timestamp: {db_timestamp}")
+            self.log(f"Local timestamp: {local_timestamp}")
+            self.log(f"DB timestamp: {db_timestamp}")
 
             if local_timestamp > db_timestamp:
-                log("Local file is newer, uploading")
+                self.log("Local file is newer, uploading")
                 self.update_file(file, local_timestamp, local_hash)
 
             elif local_timestamp < db_timestamp:
-                log("Local file is older, downloading")
+                self.log("Local file is older, downloading")
                 self.download_file(file)
             else:
-                log("Timestamps match, skipping")
+                self.log("Timestamps match, skipping")
                 self.skipped += 1
-        log("=" * (40 + len(file)))
+        self.log("=" * (40 + len(file)))
 
     def update_file(self, file, time, hash):
         try:
@@ -79,7 +79,7 @@ class Sync:
             self.connection.commit()
             self.uploaded += 1
         except mysql.connector.errors.DataError:
-            log(f"⚠️ File {file} is too large, skipping")
+            self.log(f"⚠️ File {file} is too large, skipping")
             self.skipped += 1
 
     def create_file(self, filename, content):
@@ -101,7 +101,7 @@ class Sync:
             if not isfile(path + "/" + i):  # Item is a folder
                 out += self.scan_files(path + "/" + i)
             else:
-                log(f"Found file {path + '/' + i}")
+                self.log(f"Found file {path + '/' + i}")
                 out.append(path + "/" + i)
         return out
 
@@ -121,7 +121,7 @@ class Sync:
             self.connection.commit()
             self.uploaded += 1
         except mysql.connector.errors.DataError:
-            log(f"⚠️ File {file} is too large, skipping")
+            self.log(f"⚠️ File {file} is too large, skipping")
             self.skipped += 1
 
     def hash_file(self, file):
@@ -137,7 +137,7 @@ class Sync:
     def do(self):
         if not self.disabled:
             if not os.path.exists(self.path):
-                log("⚠️ New Folder doesn't exist, creating")
+                self.log("⚠️ New Folder doesn't exist, creating")
                 os.makedirs(self.path)
 
             local_files = self.scan_files(self.path)
@@ -154,13 +154,13 @@ class Sync:
                     self.compare_files(i)
                 else:
                     # New file in db
-                    log(f"New file in DB, downloading {i}")
+                    self.log(f"New file in DB, downloading {i}")
                     self.download_file(i)
             # Find new files that aren't in the db
 
             for i in list(set(local_files) - set(db_files)):
                 # New file local
-                log(f"{i} is new to the db and will be uploaded")
+                self.log(f"{i} is new to the db and will be uploaded")
                 self.upload_file(i)
             self.report()
             print("✅ Sync successful")
@@ -176,7 +176,6 @@ class Sync:
             print("Closing sync connection...")
             self.connection.close()
 
-
-def log(self, *args):
-    if self.verbose:
-        print(*args)
+    def log(self, *args):
+        if self.verbose:
+            print(*args)
