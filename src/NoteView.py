@@ -324,6 +324,7 @@ class Image(Gtk.Box):
             self.main.set_size_request((loader.get_pixbuf().get_width() * self.data["scale"]).__floor__(),
                                        (loader.get_pixbuf().get_height() * self.data["scale"]).__floor__())
             self.main.set_vexpand(True)
+            self.main.set_hexpand(True)
         except (requests.exceptions.ConnectionError, requests.exceptions.MissingSchema) as err:
             self.remove(self.main)
             self.main = Gtk.Box(orientation=Gtk.Orientation.VERTICAL,

@@ -68,7 +68,6 @@ def load_configuration(retry=False):
             raise ConfigRegenFail
 
 
-global verbose
 verbose = "--verbose" in argv or "-v" in argv
 
 if "-h" in argv or "--help" in argv:
