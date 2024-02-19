@@ -5,9 +5,9 @@
 A minimalistic rich text notes app written in GTK4 and Python
 
 ### Running from source (Fedora):
-1. Clone repo using Github CLI
+1. Clone repository using git:
 ```
-gh repo clone Wemmy0/Inkwell
+git clone https://github.com/Wemmy0/Inkwell/
 ```
 
 2. Create new venv & activate it
