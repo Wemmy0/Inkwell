@@ -48,6 +48,5 @@ def finalise(data: list, path: str, err: int):
         dialogue = Gtk.MessageDialog(text="Unable to export file",
                                      message_type=Gtk.MessageType.INFO,
                                      buttons=Gtk.ButtonsType.OK)
-    finally:
-        dialogue.connect("response", lambda dialog, *args: dialog.destroy())
-        dialogue.present()
+    dialogue.connect("response", lambda dialog, *args: dialog.destroy())
+    dialogue.present()
