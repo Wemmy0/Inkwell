@@ -1,6 +1,6 @@
 # Inkwell
 ![](Assets/UI.png)
-[![Pylint](https://github.com/Wemmy0/Inkwell/actions/workflows/pylint.yml/badge.svg)](https://github.com/Wemmy0/Inkwell/actions/workflows/pylint.yml)
+<p align="center"><img src="https://github.com/Wemmy0/Inkwell/actions/workflows/pylint.yml/badge.svg" /></p>
 
 A minimalistic rich text notes app written in GTK4 and Python
 
